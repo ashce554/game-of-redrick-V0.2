@@ -1,0 +1,3108 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Of Redrick - Character Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        :root {
+            --deep-dark: #050108;
+            --matrix-dark: #0d0208;
+            --predator-red: #ff073a;
+            --predator-blue: #00f7ff;
+            --cyberpunk-purple: #ff00ff;
+            --cyberpunk-yellow: #ffff00;
+            --cyberpunk-blue: #00f7ff;
+            --leader-red: #ff073a;
+            --leader-blue: #00f7ff;
+            --dark-purple: #4d004d;
+            --dark-red: #400000;
+            --text-primary: #e0e0e0;
+            --text-accent: #00f7ff;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Rajdhani', 'Courier New', monospace;
+        }
+
+        body {
+            background: radial-gradient(circle at center, var(--deep-dark), var(--matrix-dark));
+            color: var(--text-primary);
+            padding: 20px;
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background:
+                linear-gradient(rgba(3, 0, 2, 0.2), rgba(2, 0, 1, 0.2));
+            z-index: -1;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+
+        .header {
+            text-align: center;
+            padding: 20px;
+            border-bottom: 2px solid var(--predator-blue);
+            position: relative;
+            margin-bottom: 30px;
+            background: rgba(8, 1, 15, 0.7);
+            border-radius: 5px;
+            box-shadow: 0 0 20px rgba(0, 247, 255, 0.3);
+        }
+
+        .game-title {
+            font-size: 3rem;
+            letter-spacing: 5px;
+            margin-bottom: 5px;
+            text-shadow: 0 0 10px var(--predator-red), 0 0 20px var(--cyberpunk-purple);
+            background: linear-gradient(to right, var(--predator-red), var(--predator-blue), var(--cyberpunk-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .version {
+            font-size: 1.1rem;
+            color: var(--predator-blue);
+            letter-spacing: 2px;
+            margin-bottom: 15px;
+            text-shadow: 0 0 5px var(--predator-blue);
+        }
+
+        .predator-icon {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            background:
+                radial-gradient(circle, var(--predator-red) 0%, transparent 70%),
+                repeating-linear-gradient(45deg, transparent, transparent 5px, var(--predator-red) 5px, var(--predator-red) 10px);
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            animation: pulse 3s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                opacity: 0.3;
+                transform: scale(0.95);
+            }
+
+            50% {
+                opacity: 0.8;
+                transform: scale(1.05);
+            }
+
+            100% {
+                opacity: 0.3;
+                transform: scale(0.95);
+            }
+        }
+
+        .view-container {
+            display: none;
+        }
+
+        .active-view {
+            display: block;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .panel {
+            background: linear-gradient(145deg, rgba(8, 1, 15, 0.95), rgba(13, 2, 8, 0.95));
+            border: 1px solid var(--predator-blue);
+            border-radius: 5px;
+            padding: 20px;
+            box-shadow: 0 0 20px rgba(0, 187, 255, 0.4);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .panel::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(to right, transparent, var(--predator-red), var(--predator-blue), var(--predator-red), transparent);
+            box-shadow: 0 0 10px var(--predator-red);
+            animation: scanLine 5s linear infinite;
+        }
+
+        @keyframes scanLine {
+            0% {
+                top: 0%;
+            }
+
+            100% {
+                bottom: 0%;
+            }
+        }
+
+        .panel-title {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--predator-blue);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: var(--predator-blue);
+            text-shadow: 0 0 8px var(--predator-blue);
+        }
+
+        .btn {
+            background: linear-gradient(145deg, rgba(0, 247, 255, 0.1), rgba(255, 7, 58, 0.1));
+            color: var(--predator-blue);
+            border: 1px solid var(--predator-blue);
+            padding: 8px 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 1rem;
+            border-radius: 3px;
+            position: relative;
+            overflow: hidden;
+            text-shadow: 0 0 8px var(--predator-blue);
+        }
+
+        .btn:hover {
+            background: linear-gradient(145deg, var(--predator-blue), var(--predator-red));
+            color: black;
+            box-shadow: 0 0 15px var(--predator-blue);
+            text-shadow: none;
+        }
+
+        .btn::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background:
+                linear-gradient(transparent 50%, rgba(0, 247, 255, 0.1) 50%);
+            background-size: 100% 4px;
+            z-index: -1;
+            opacity: 0.3;
+            pointer-events: none;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 0.9rem;
+            color: var(--predator-blue);
+        }
+
+        input,
+        select,
+        textarea {
+            width: 100%;
+            padding: 8px 10px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--predator-blue);
+            color: var(--text-primary);
+            font-size: 1rem;
+            caret-color: var(--predator-blue);
+            box-shadow: 0 0 5px rgba(0, 247, 255, 0.2);
+        }
+
+        input:focus,
+        textarea:focus {
+            outline: 1px solid var(--predator-blue);
+            box-shadow: 0 0 10px var(--predator-blue);
+        }
+
+        input::after,
+        textarea::after {
+            content: "";
+            position: absolute;
+            top: 10%;
+            right: 10px;
+            width: 2px;
+            height: 80%;
+            background: var(--predator-blue);
+            animation: blink 0.5s infinite;
+            display: none;
+        }
+
+        @keyframes blink {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0;
+            }
+        }
+
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .radar-container {
+            height: 300px;
+            position: relative;
+            margin: 20px 0;
+        }
+
+        .special-stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            margin-top: 10px;
+        }
+
+        .checkbox-group input {
+            width: auto;
+            margin-right: 10px;
+        }
+
+        .inventory-container {
+            margin-top: 20px;
+        }
+
+        .dm-panel {
+            margin-top: 30px;
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 20px;
+        }
+
+        .characters-list {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .character-card {
+            background: linear-gradient(145deg, rgba(10, 1, 20, 0.9), rgba(13, 2, 8, 0.9));
+            border: 1px solid var(--predator-blue);
+            border-radius: 5px;
+            padding: 15px;
+            position: relative;
+            transition: all 0.3s;
+            box-shadow: 0 0 10px rgba(0, 247, 255, 0.2);
+        }
+
+        .character-card.expanded {
+            grid-column: 1 / -1;
+            background: linear-gradient(145deg, rgba(5, 0, 10, 0.95), rgba(13, 2, 8, 0.95));
+        }
+
+        .character-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--predator-blue);
+        }
+
+        .character-name {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--cyberpunk-yellow);
+        }
+
+        .character-actions {
+            display: flex;
+            gap: 5px;
+        }
+
+        .character-actions button {
+            background: none;
+            border: none;
+            color: var(--predator-blue);
+            cursor: pointer;
+            font-size: 1.2rem;
+            padding: 5px;
+            transition: all 0.3s;
+        }
+
+        .character-actions button:hover {
+            color: var(--predator-red);
+            transform: scale(1.2);
+        }
+
+        .character-stats {
+            display: flex;
+            justify-content: space-around;
+            margin: 10px 0;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            text-align: center;
+            min-width: 80px;
+            margin: 5px;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--predator-blue);
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: #aaa;
+        }
+
+        .character-details {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid var(--predator-blue);
+        }
+
+        .character-details h4 {
+            margin-bottom: 10px;
+            color: var(--predator-blue);
+        }
+
+        .character-details textarea {
+            height: 100px;
+            margin-bottom: 10px;
+        }
+
+        .expanded-view {
+            display: none;
+            margin-top: 15px;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid var(--predator-blue);
+            border-radius: 3px;
+        }
+
+        .expanded-view.active {
+            display: block;
+        }
+
+        .expanded-section {
+            margin-bottom: 15px;
+        }
+
+        .expanded-section h4 {
+            margin-bottom: 8px;
+            color: var(--predator-blue);
+        }
+
+        /* Улучшенный стиль для цифрового дождя */
+        #digitalRainCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -2;
+        }
+
+        .predator-word {
+            animation: predatorPulse 3s infinite;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        @keyframes predatorPulse {
+
+            0%,
+            100% {
+                text-shadow: 0 0 5px currentColor, 0 0 10px currentColor;
+            }
+
+            50% {
+                text-shadow: 0 0 15px currentColor, 0 0 30px currentColor;
+            }
+        }
+
+        .predator-scan {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg,
+                    rgba(255, 7, 58, 0.15) 0%,
+                    rgba(139, 0, 0, 0.08) 50%,
+                    rgba(50, 0, 0, 0.02) 100%);
+            z-index: -1;
+            pointer-events: none;
+            animation: predatorScan 10s infinite linear;
+        }
+
+        @keyframes predatorScan {
+            0% {
+                transform: translateY(-100%);
+            }
+
+            100% {
+                transform: translateY(100%);
+            }
+        }
+
+        .hint {
+            font-size: 0.8rem;
+            color: #aaa;
+            margin-top: 5px;
+        }
+
+        .file-upload {
+            border: 1px dashed var(--predator-blue);
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 20px;
+            cursor: pointer;
+        }
+
+        .file-upload:hover {
+            background: rgba(0, 247, 255, 0.05);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+            background: rgba(0, 0, 0, 0.3);
+        }
+
+        th,
+        td {
+            border: 1px solid var(--predator-blue);
+            padding: 8px;
+            text-align: left;
+        }
+
+        th {
+            background: rgba(0, 247, 255, 0.1);
+            color: var(--cyberpunk-yellow);
+        }
+
+        .armor-table td:first-child {
+            width: 25%;
+        }
+
+        .weapon-table input {
+            width: 95%;
+        }
+
+        .add-row {
+            margin-top: 5px;
+            text-align: right;
+        }
+
+        .nav-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 20px;
+            margin-bottom: 30px;
+        }
+
+        .nav-btn {
+            padding: 12px 25px;
+            font-size: 1.1rem;
+            background: linear-gradient(145deg, rgba(0, 0, 0, 0.5), rgba(13, 2, 8, 0.5));
+            border: 2px solid var(--predator-blue);
+            color: var(--predator-blue);
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-shadow: 0 0 5px var(--predator-blue);
+        }
+
+        .nav-btn:hover {
+            background: linear-gradient(145deg, var(--predator-blue), var(--predator-red));
+            color: black;
+            text-shadow: none;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .stat-box {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--predator-blue);
+            padding: 10px;
+            text-align: center;
+            transition: all 0.3s;
+        }
+
+        .stat-box:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 247, 255, 0.3);
+        }
+
+        .stat-label-dm {
+            font-size: 0.9rem;
+            color: #aaa;
+        }
+
+        .stat-value-dm {
+            font-size: 1.4rem;
+            font-weight: bold;
+            margin-top: 5px;
+            color: var(--cyberpunk-yellow);
+        }
+
+        .editable-field {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--predator-blue);
+            color: var(--text-primary);
+            padding: 5px;
+            margin: 3px 0;
+            width: 100%;
+        }
+
+        .editable-field:focus {
+            outline: 1px solid var(--predator-blue);
+        }
+
+        .editable-stat {
+            width: 60px;
+            text-align: center;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--predator-blue);
+            color: var(--text-primary);
+            font-size: 1.2rem;
+            font-weight: bold;
+            padding: 5px;
+        }
+
+        .editable-stat:focus {
+            outline: 1px solid var(--predator-blue);
+        }
+
+        .compact-stats {
+            display: flex;
+            justify-content: space-around;
+            margin: 10px 0;
+            flex-wrap: wrap;
+        }
+
+        .compact-stat {
+            margin: 5px 10px;
+            text-align: center;
+        }
+
+        .compact-stat-value {
+            font-weight: bold;
+            font-size: 1.1rem;
+            color: var(--cyberpunk-purple);
+        }
+
+        .compact-stat-label {
+            font-size: 0.8rem;
+            color: #aaa;
+        }
+
+        /* Character images */
+        .character-image-container {
+            text-align: center;
+            margin-bottom: 15px;
+            max-width: 100%;
+        }
+
+        .character-image {
+            max-width: 100%;
+            max-height: 200px;
+            border: 1px solid var(--predator-blue);
+            margin: 0 auto;
+            display: block;
+            box-shadow: 0 0 10px rgba(0, 247, 255, 0.3);
+        }
+
+        .character-image.expanded {
+            max-width: 100%;
+            max-height: 400px;
+        }
+
+        .image-upload {
+            margin-top: 10px;
+        }
+
+        .image-upload-btn {
+            display: block;
+            width: 100%;
+            padding: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px dashed var(--predator-blue);
+            color: var(--predator-blue);
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .image-upload-btn:hover {
+            background: rgba(0, 247, 255, 0.1);
+        }
+
+        .character-basic-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .character-basic-info-row {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .character-basic-info-item {
+            flex: 1;
+            margin: 0 5px;
+        }
+
+        .health-morale-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .health-morale-item {
+            text-align: center;
+        }
+
+        .sidebar {
+            position: sticky;
+            top: 20px;
+            height: fit-content;
+        }
+
+        .sidebar-character {
+            background: linear-gradient(145deg, rgba(10, 1, 20, 0.8), rgba(13, 2, 8, 0.8));
+            border: 1px solid var(--predator-blue);
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 20px;
+            transition: all 0.3s;
+        }
+
+        .sidebar-character:hover {
+            transform: translateX(5px);
+            box-shadow: 0 0 15px rgba(0, 247, 255, 0.3);
+        }
+
+        .sidebar-character-name {
+            font-size: 1.2rem;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 10px;
+            border-bottom: 1px solid var(--predator-blue);
+            padding-bottom: 5px;
+            color: var(--cyberpunk-yellow);
+        }
+
+        .sidebar-character-image {
+            max-width: 100%;
+            max-height: 150px;
+            margin: 0 auto 10px;
+            display: block;
+            border: 1px solid var(--predator-blue);
+        }
+
+        .sidebar-character-stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .sidebar-stat-item {
+            text-align: center;
+        }
+
+        .sidebar-stat-value {
+            font-weight: bold;
+            font-size: 1.1rem;
+            color: var(--predator-blue);
+        }
+
+        .sidebar-stat-label {
+            font-size: 0.8rem;
+            color: #aaa;
+        }
+
+        /* Стили для матричного дождя */
+        .leader-char {
+            font-weight: bold;
+            text-shadow: 0 0 10px currentColor, 0 0 20px currentColor;
+        }
+
+        .red-leader {
+            color: var(--leader-red);
+        }
+
+        .blue-leader {
+            color: var(--leader-blue);
+        }
+
+        .dark-red {
+            color: #400000;
+            /* Темно-бордовый */
+        }
+
+        .dark-blue {
+            color: #002040;
+            /* Темно-синий */
+        }
+
+        /* Добавим стили для кнопок удаления строк */
+        .table-controls {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 5px;
+        }
+
+        .table-controls .btn {
+            width: 48%;
+        }
+
+        /* Добавляем стили для PDF-просмотрщика */
+        #pdf-viewer {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 1000;
+            overflow: auto;
+            padding: 20px;
+        }
+
+        .pdf-container {
+            background: linear-gradient(145deg, rgba(8, 1, 15, 0.95), rgba(13, 2, 8, 0.95));
+            border: 2px solid var(--predator-blue);
+            border-radius: 10px;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            box-shadow: 0 0 30px rgba(0, 187, 255, 0.6);
+            position: relative;
+        }
+
+        .pdf-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--predator-blue);
+        }
+
+        .pdf-title {
+            font-size: 2rem;
+            color: var(--predator-blue);
+            text-shadow: 0 0 10px var(--predator-blue);
+        }
+
+        .pdf-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .pdf-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .pdf-section {
+            background: linear-gradient(145deg, rgba(10, 1, 20, 0.8), rgba(13, 2, 8, 0.8));
+            border: 1px solid var(--predator-blue);
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .pdf-section-title {
+            font-size: 1.3rem;
+            color: var(--cyberpunk-yellow);
+            margin-bottom: 15px;
+            padding-bottom: 5px;
+            border-bottom: 1px solid var(--predator-blue);
+        }
+
+        .pdf-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .pdf-stat-item {
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--predator-blue);
+            padding: 10px;
+            text-align: center;
+        }
+
+        .pdf-stat-label {
+            font-size: 0.9rem;
+            color: #aaa;
+        }
+
+        .pdf-stat-value {
+            font-size: 1.3rem;
+            font-weight: bold;
+            margin-top: 5px;
+            color: var(--predator-blue);
+        }
+
+        .pdf-image-container {
+            text-align: center;
+            margin: 15px 0;
+        }
+
+        .pdf-character-image {
+            max-width: 100%;
+            max-height: 250px;
+            border: 1px solid var(--predator-blue);
+            box-shadow: 0 0 10px rgba(0, 247, 255, 0.3);
+        }
+
+        .pdf-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 10px 0;
+        }
+
+        .pdf-table th,
+        .pdf-table td {
+            border: 1px solid var(--predator-blue);
+            padding: 8px;
+            text-align: left;
+        }
+
+        .pdf-table th {
+            background: rgba(0, 247, 255, 0.1);
+            color: var(--cyberpunk-yellow);
+        }
+
+        .pdf-textarea {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--predator-blue);
+            color: var(--text-primary);
+            padding: 10px;
+            width: 100%;
+            min-height: 100px;
+            margin: 10px 0;
+            font-family: 'Courier New', monospace;
+        }
+
+        .close-pdf {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: var(--predator-red);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            font-size: 1.5rem;
+            cursor: pointer;
+            box-shadow: 0 0 10px var(--predator-red);
+        }
+
+        /* Киберпанк эффекты */
+        .glitch {
+            position: relative;
+        }
+
+        .glitch::before,
+        .glitch::after {
+            content: attr(data-text);
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .glitch::before {
+            left: 2px;
+            text-shadow: -1px 0 var(--predator-red);
+            clip: rect(44px, 450px, 56px, 0);
+            animation: glitch-anim 5s infinite linear alternate-reverse;
+        }
+
+        .glitch::after {
+            left: -2px;
+            text-shadow: -1px 0 var(--predator-blue);
+            clip: rect(44px, 450px, 56px, 0);
+            animation: glitch-anim2 5s infinite linear alternate-reverse;
+        }
+
+        @keyframes glitch-anim {
+            0% {
+                clip: rect(77px, 9999px, 76px, 0);
+            }
+
+            5% {
+                clip: rect(55px, 9999px, 16px, 0);
+            }
+
+            10% {
+                clip: rect(33px, 9999px, 36px, 0);
+            }
+
+            15% {
+                clip: rect(35px, 9999px, 9px, 0);
+            }
+
+            20% {
+                clip: rect(95px, 9999px, 53px, 0);
+            }
+
+            25% {
+                clip: rect(10px, 9999px, 97px, 0);
+            }
+
+            30% {
+                clip: rect(97px, 9999px, 13px, 0);
+            }
+
+            35% {
+                clip: rect(92px, 9999px, 100px, 0);
+            }
+
+            40% {
+                clip: rect(100px, 9999px, 2px, 0);
+            }
+
+            45% {
+                clip: rect(23px, 9999px, 87px, 0);
+            }
+
+            50% {
+                clip: rect(1px, 9999px, 91px, 0);
+            }
+
+            55% {
+                clip: rect(87px, 9999px, 73px, 0);
+            }
+
+            60% {
+                clip: rect(52px, 9999px, 42px, 0);
+            }
+
+            65% {
+                clip: rect(72px, 9999px, 12px, 0);
+            }
+
+            70% {
+                clip: rect(21px, 9999px, 75px, 0);
+            }
+
+            75% {
+                clip: rect(45px, 9999px, 98px, 0);
+            }
+
+            80% {
+                clip: rect(3px, 9999px, 96px, 0);
+            }
+
+            85% {
+                clip: rect(14px, 9999px, 79px, 0);
+            }
+
+            90% {
+                clip: rect(58px, 9999px, 84px, 0);
+            }
+
+            95% {
+                clip: rect(34px, 9999px, 27px, 0);
+            }
+
+            100% {
+                clip: rect(73px, 9999px, 85px, 0);
+            }
+        }
+
+        @keyframes glitch-anim2 {
+            0% {
+                clip: rect(65px, 9999px, 100px, 0);
+            }
+
+            5% {
+                clip: rect(52px, 9999px, 74px, 0);
+            }
+
+            10% {
+                clip: rect(79px, 9999px, 85px, 0);
+            }
+
+            15% {
+                clip: rect(75px, 9999px, 5px, 0);
+            }
+
+            20% {
+                clip: rect(67px, 9999px, 61px, 0);
+            }
+
+            25% {
+                clip: rect(14px, 9999px, 79px, 0);
+            }
+
+            30% {
+                clip: rect(1px, 9999px, 66px, 0);
+            }
+
+            35% {
+                clip: rect(86px, 9999px, 30px, 0);
+            }
+
+            40% {
+                clip: rect(23px, 9999px, 98px, 0);
+            }
+
+            45% {
+                clip: rect(85px, 9999px, 72px, 0);
+            }
+
+            50% {
+                clip: rect(71px, 9999px, 75px, 0);
+            }
+
+            55% {
+                clip: rect(2px, 9999px, 48px, 0);
+            }
+
+            60% {
+                clip: rect(30px, 9999px, 16px, 0);
+            }
+
+            65% {
+                clip: rect(59px, 9999px, 50px, 0);
+            }
+
+            70% {
+                clip: rect(41px, 9999px, 62px, 0);
+            }
+
+            75% {
+                clip: rect(2px, 9999px, 82px, 0);
+            }
+
+            80% {
+                clip: rect(47px, 9999px, 73px, 0);
+            }
+
+            85% {
+                clip: rect(3px, 9999px, 27px, 0);
+            }
+
+            90% {
+                clip: rect(26px, 9999px, 55px, 0);
+            }
+
+            95% {
+                clip: rect(42px, 9999px, 97px, 0);
+            }
+
+            100% {
+                clip: rect(38px, 9999px, 49px, 0);
+            }
+        }
+
+        /* Стили для символов Хищника */
+        .predator-symbols {
+            font-family: 'Courier New', monospace;
+            font-size: 1.2em;
+            color: var(--predator-red);
+        }
+
+        /* Стили для цифрового дождя */
+        .matrix-grid {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background:
+                linear-gradient(rgba(20, 20, 80, 0.1) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(20, 20, 80, 0.1) 1px, transparent 1px);
+            background-size: 40px 40px;
+            z-index: -3;
+            opacity: 0.3;
+            pointer-events: none;
+        }
+
+        .code-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(rgba(0, 0, 0, 0.1) 50%, rgba(0, 0, 0, 0.2) 50%);
+            background-size: 100% 4px;
+            z-index: -2;
+            opacity: 0.2;
+            pointer-events: none;
+        }
+
+        .neon-border {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            box-shadow:
+                inset 0 0 30px rgba(0, 80, 255, 0.3),
+                inset 0 0 60px rgba(255, 0, 48, 0.2);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .predator-vision {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            background: radial-gradient(circle, transparent 60%, rgba(255, 0, 48, 0.1) 100%);
+            z-index: -1;
+            pointer-events: none;
+            animation: predatorVisionPulse 4s infinite alternate;
+        }
+
+        .city-silhouette {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 30%;
+            background: linear-gradient(transparent, rgba(5, 5, 30, 0.9));
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        .hunter-signature {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            color: rgba(255, 0, 48, 0.5);
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            z-index: 1;
+            animation: flicker 3s infinite;
+            pointer-events: none;
+        }
+
+        .system-status {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            color: rgba(0, 200, 255, 0.7);
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        @keyframes predatorVisionPulse {
+            0% {
+                opacity: 0.1;
+            }
+
+            100% {
+                opacity: 0.3;
+            }
+        }
+
+        @keyframes flicker {
+
+            0%,
+            19%,
+            21%,
+            23%,
+            25%,
+            54%,
+            56%,
+            100% {
+                opacity: 0.5;
+            }
+
+            20%,
+            24%,
+            55% {
+                opacity: 0.2;
+            }
+        }
+
+        .container {
+            z-index: 10;
+            /* Добавьте это свойство */
+            position: relative;
+            /* Убедитесь что есть */
+        }
+    </style>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="matrix-grid"></div>
+    <div class="code-overlay"></div>
+    <div class="neon-border"></div>
+    <div class="predator-vision"></div>
+    <div class="city-silhouette"></div>
+    <div class="hunter-signature">PREDATOR_SCAN: ACTIVE</div>
+    <div class="system-status">SYSTEM: OPTIMIZED RAIN v2.0</div>
+
+    <!-- Эффект цифрового дождя -->
+    <canvas id="digitalRainCanvas"></canvas>
+    <div class="predator-scan"></div>
+
+    <div class="container">
+        <div class="header">
+            <div class="game-title glitch" data-text="Game Of Redrick">Game Of Redrick</div>
+            <div class="version">GoR Core v0.1</div>
+            <div class="predator-icon"></div>
+        </div>
+
+        <div class="nav-buttons">
+            <button class="btn nav-btn" id="playerViewBtn">Лист персонажа</button>
+            <button class="btn nav-btn" id="dmViewBtn">Панель ДМа</button>
+            <button class="btn nav-btn" id="backToHandbook">На главную</button>
+        </div>
+
+        <!-- Player View -->
+        <div id="player-view" class="view-container active-view">
+            <div class="main-content">
+                <!-- Player Panel -->
+                <div class="panel player-panel">
+                    <div class="panel-title">
+                        <span>Лист персонажа</span>
+                        <button class="btn" id="downloadSheet">Просмотреть лист персонажа</button>
+                    </div>
+
+                    <div class="character-basic-info">
+                        <div class="character-basic-info-row">
+                            <div class="character-basic-info-item">
+                                <label for="characterName">Имя персонажа</label>
+                                <input type="text" id="characterName" placeholder="Введите имя">
+                            </div>
+                            <div class="character-basic-info-item">
+                                <label for="characterRace">Раса/Вид</label>
+                                <input type="text" id="characterRace" placeholder="Раса/Вид">
+                            </div>
+                        </div>
+                        <div class="character-basic-info-row">
+                            <div class="character-basic-info-item">
+                                <label for="characterArchetype">Архетип</label>
+                                <input type="text" id="characterArchetype" placeholder="Архетип">
+                            </div>
+                            <div class="character-basic-info-item">
+                                <label for="characterLevel">Уровень</label>
+                                <input type="number" id="characterLevel" min="1" value="1">
+                            </div>
+                            <div class="character-basic-info-item">
+                                <label for="characterAge">Возраст</label>
+                                <input type="number" id="characterAge" min="1" value="25">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="character-image-container">
+                        <img id="characterImagePreview" class="character-image" style="display: none;">
+                        <label for="characterImageUpload" class="image-upload-btn">Загрузить изображение персонажа
+                            (PNG/JPG)</label>
+                        <input type="file" id="characterImageUpload" accept=".png,.jpg,.jpeg" style="display: none;">
+                    </div>
+
+                    <div class="panel-title" style="margin-top: 20px;">
+                        <span>Характеристики</span>
+                    </div>
+
+                    <div class="stats-container">
+                        <div class="form-group">
+                            <label for="strength">Сила (0-10)</label>
+                            <input type="number" id="strength" min="0" max="10" value="5">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="agility">Ловкость (0-10)</label>
+                            <input type="number" id="agility" min="0" max="10" value="5">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="spirit">Дух (0-10)</label>
+                            <input type="number" id="spirit" min="0" max="10" value="5">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="intellect">Интеллект (0-10)</label>
+                            <input type="number" id="intellect" min="0" max="10" value="5">
+                        </div>
+                    </div>
+
+                    <div class="panel-title" style="margin-top: 10px;">
+                        <span>Радарная диаграмма характеристик</span>
+                    </div>
+
+                    <div class="radar-container">
+                        <canvas id="radarChart"></canvas>
+                    </div>
+
+                    <div class="health-morale-container">
+                        <div class="health-morale-item">
+                            <label for="hp">Текущие ХП</label>
+                            <input type="number" id="hp" min="0" value="50">
+                            <div class="hint">Макс. ХП: <span id="maxHp">50</span></div>
+                        </div>
+                        <div class="health-morale-item">
+                            <label for="hpRaceBonus">Бонус ХП от расы</label>
+                            <input type="number" id="hpRaceBonus" min="0" value="0">
+                        </div>
+                    </div>
+
+                    <div class="health-morale-container">
+                        <div class="health-morale-item">
+                            <label for="mana">Текущая мана</label>
+                            <input type="number" id="mana" min="0" value="30">
+                            <div class="hint">Макс. мана: <span id="maxMana">30</span></div>
+                        </div>
+                        <div class="health-morale-item">
+                            <label for="manaRaceBonus">Бонус маны от расы</label>
+                            <input type="number" id="manaRaceBonus" min="0" value="0">
+                        </div>
+                    </div>
+
+                    <div class="health-morale-container">
+                        <div class="health-morale-item">
+                            <label for="morale">Мораль (-3 - +3)</label>
+                            <input type="number" id="morale" min="-3" max="3" value="0">
+                        </div>
+                        <div class="health-morale-item">
+                            <label for="authority">Авторитет</label>
+                            <input type="number" id="authority" min="0" value="0">
+                        </div>
+                    </div>
+
+                    <div class="health-morale-container">
+                        <div class="health-morale-item">
+                            <label for="cyberpsychosis">Киберпсихоз</label>
+                            <input type="number" id="cyberpsychosis" min="0" max="10" value="0">
+                        </div>
+                        <div class="health-morale-item">
+                            <label for="overload">Перегрузка (%)</label>
+                            <input type="number" id="overload" min="0" max="100" value="0">
+                        </div>
+                    </div>
+
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="hasCyberpsychosis">
+                        <label for="hasCyberpsychosis">Персонаж имеет механику "Киберпсихоза"</label>
+                    </div>
+
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="hasOverload">
+                        <label for="hasOverload">Персонаж имеет механику "Перегрузки"</label>
+                    </div>
+
+                    <div class="inventory-container">
+                        <div class="panel-title">
+                            <span>Инвентарь и снаряжение</span>
+                        </div>
+                        <textarea id="inventory" placeholder="Оружие, броня, артефакты и другие предметы..."></textarea>
+                    </div>
+
+                    <button class="btn" id="saveCharacter" style="width: 100%; margin-top: 20px;">Сохранить
+                        персонажа</button>
+                </div>
+
+                <!-- Equipment Panel -->
+                <div class="panel extraction-panel">
+                    <div class="panel-title">
+                        <span>Экипировка</span>
+                    </div>
+
+                    <div class="hint" style="margin-bottom: 15px;">
+                        Здесь вы можете указать экипировку вашего персонажа
+                    </div>
+
+                    <div class="form-group">
+                        <label for="combatSkills">Боевые навыки</label>
+                        <textarea id="combatSkills" placeholder="Боевые навыки персонажа"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="basicSkills">Основные навыки</label>
+                        <textarea id="basicSkills" placeholder="Основные навыки персонажа"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="specializations">Специализации</label>
+                        <textarea id="specializations" placeholder="Специализации персонажа"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="modifications">Модификации (Киберимпланты, мутации, улучшения)</label>
+                        <textarea id="modifications" placeholder="Модификации персонажа"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="notes">Заметки/История персонажа</label>
+                        <textarea id="notes" placeholder="Заметки о персонаже"></textarea>
+                    </div>
+
+                    <div class="panel-title">
+                        <span>Броня</span>
+                    </div>
+
+                    <table class="armor-table" id="armorTable">
+                        <tr>
+                            <th>Часть тела</th>
+                            <th>Название</th>
+                            <th>Защита</th>
+                            <th>Требования</th>
+                        </tr>
+                        <tr>
+                            <td><input type="text" value="Голова" readonly></td>
+                            <td><input type="text" id="head-armor-name"></td>
+                            <td><input type="number" id="head-armor-protection" min="0"></td>
+                            <td><input type="text" id="head-armor-requirements"></td>
+                        </tr>
+                        <tr>
+                            <td><input type="text" value="Торс" readonly></td>
+                            <td><input type="text" id="torso-armor-name"></td>
+                            <td><input type="number" id="torso-armor-protection" min="0"></td>
+                            <td><input type="text" id="torso-armor-requirements"></td>
+                        </tr>
+                        <tr>
+                            <td><input type="text" value="Руки" readonly></td>
+                            <td><input type="text" id="arms-armor-name"></td>
+                            <td><input type="number" id="arms-armor-protection" min="0"></td>
+                            <td><input type="text" id="arms-armor-requirements"></td>
+                        </tr>
+                        <tr>
+                            <td><input type="text" value="Ноги" readonly></td>
+                            <td><input type="text" id="legs-armor-name"></td>
+                            <td><input type="number" id="legs-armor-protection" min="0"></td>
+                            <td><input type="text" id="legs-armor-requirements"></td>
+                        </tr>
+                    </table>
+                    <div class="table-controls">
+                        <button class="btn" id="addArmorRow">+ Добавить броню</button>
+                        <button class="btn" id="removeLastArmorRow">- Удалить последнюю</button>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="vulnerability">Уязвимость</label>
+                        <input type="text" id="vulnerability" placeholder="Укажите уязвимость брони">
+                    </div>
+
+                    <div class="panel-title">
+                        <span>Оружие</span>
+                    </div>
+
+                    <table class="weapon-table" id="weaponsTable">
+                        <tr>
+                            <th>Название</th>
+                            <th>Кубы урона</th>
+                            <th>Особое свойство</th>
+                        </tr>
+                        <tr>
+                            <td><input type="text" class="weapon-name"></td>
+                            <td><input type="text" class="weapon-damage"></td>
+                            <td><input type="text" class="weapon-special"></td>
+                        </tr>
+                    </table>
+                    <div class="table-controls">
+                        <button class="btn" id="addWeaponRow">+ Добавить оружие</button>
+                        <button class="btn" id="removeLastWeaponRow">- Удалить последнюю</button>
+                    </div>
+
+                    <div class="panel-title">
+                        <span>Амуниция</span>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="healing">Аптечки/Стимпаки/зелья исцеления</label>
+                        <input type="text" id="healing" placeholder="Укажите количество и тип">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="currency">Валюта</label>
+                        <input type="text" id="currency" placeholder="Золото, серебро, медь">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="artifacts">Артефакты</label>
+                        <input type="text" id="artifacts" placeholder="Укажите артефакты">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="backpack">Рюкзак</label>
+                        <input type="text" id="backpack" placeholder="Содержимое рюкзака">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- DM View -->
+        <div id="dm-view" class="view-container">
+            <div class="panel dm-panel">
+                <div class="sidebar">
+                    <div class="panel-title">
+                        <span>Персонажи</span>
+                        <button class="btn" id="backToPlayerView">Назад к листу</button>
+                    </div>
+
+                    <div id="sidebarCharacters">
+                        <!-- Sidebar characters will be added here dynamically -->
+                    </div>
+                </div>
+
+                <div>
+                    <div class="panel-title">
+                        <span>Детали персонажа</span>
+                    </div>
+
+                    <div class="characters-list" id="charactersList">
+                        <!-- Characters will be added here dynamically -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- PDF Viewer -->
+    <div id="pdf-viewer">
+        <button class="close-pdf" id="closePdf">×</button>
+        <div class="pdf-container">
+            <div class="pdf-header">
+                <h1 class="pdf-title">Лист персонажа</h1>
+                <div class="pdf-actions">
+                    <button class="btn" id="downloadPdf">Скачать PDF</button>
+                    <button class="btn" id="printPdf">Печать</button>
+                </div>
+            </div>
+
+            <div class="pdf-content">
+                <div class="pdf-column">
+                    <div class="pdf-section">
+                        <h2 class="pdf-section-title">Основная информация</h2>
+                        <div class="pdf-image-container">
+                            <img id="pdf-character-image" class="pdf-character-image">
+                        </div>
+                        <div class="pdf-stats-grid">
+                            <div class="pdf-stat-item">
+                                <div class="pdf-stat-label">Имя персонажа</div>
+                                <div class="pdf-stat-value" id="pdf-name"></div>
+                            </div>
+                            <div class="pdf-stat-item">
+                                <div class="pdf-stat-label">Раса/Вид</div>
+                                <div class="pdf-stat-value" id="pdf-race"></div>
+                            </div>
+                            <div class="pdf-stat-item">
+                                <div class="pdf-stat-label">Архетип</div>
+                                <div class="pdf-stat-value" id="pdf-archetype"></div>
+                            </div>
+                            <div class="pdf-stat-item">
+                                <div class="pdf-stat-label">Уровень</div>
+                                <div class="pdf-stat-value" id="pdf-level"></div>
+                            </div>
+                            <div class="pdf-stat-item">
+                                <div class="pdf-stat-label">Возраст</div>
+                                <div class="pdf-stat-value" id="pdf-age"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pdf-section">
+                        <h2 class="pdf-section-title">Характеристики</h2>
+                        <div class="pdf-stats-grid">
+                            <div class="pdf-stat-item">
+                                <div class="pdf-stat-label">Сила</div>
+                                <div class="pdf-stat-value" id="pdf-strength"></div>
+                            </div>
+                            <div class="pdf-stat-item">
+                                <div class="pdf-stat-label">Ловкость</div>
+                                <div class="pdf-stat-value" id="pdf-agility"></div>
+                            </div>
+                            <div class="pdf-stat-item">
+                                <div class="pdf-stat-label">Дух</div>
+                                <div class="pdf-stat-value" id="pdf-spirit"></div>
+                            </div>
+                            <div class="pdf-stat-item">
+                                <div class="pdf-stat-label">Интеллект</div>
+                                <div class="pdf-stat-value" id="pdf-intellect"></div>
+                            </div>
+                            <div class="pdf-stat-item">
+                                <div class="pdf-stat-label">Выносливость</div>
+                                <div class="pdf-stat-value" id="pdf-endurance"></div>
+                            </div>
+                            <div class="pdf-stat-item">
+                                <div class="pdf-stat-label">Меткость</div>
+                                <div class="pdf-stat-value" id="pdf-accuracy"></div>
+                            </div>
+                        </div>
+                        <div class="radar-container" style="height: 250px;">
+                            <canvas id="pdf-radar-chart"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="pdf-section">
+                        <h2 class="pdf-section-title">Ресурсы</h2>
+                        <div class="pdf-stats-grid">
+                            <div class="pdf-stat-item">
+                                <div class="pdf-stat-label">Текущие ХП</div>
+                                <div class="pdf-stat-value" id="pdf-hp"></div>
+                            </div>
+                            <div class="pdf-stat-item">
+                                <div class="pdf-stat-label">Макс. ХП</div>
+                                <div class="pdf-stat-value" id="pdf-max-hp"></div>
+                            </div>
+                            <div class="pdf-stat-item">
+                                <div class="pdf-stat-label">Текущая мана</div>
+                                <div class="pdf-stat-value" id="pdf-mana"></div>
+                            </div>
+                            <div class="pdf-stat-item">
+                                <div class="pdf-stat-label">Макс. мана</div>
+                                <div class="pdf-stat-value" id="pdf-max-mana"></div>
+                            </div>
+                            <div class="pdf-stat-item">
+                                <div class="pdf-stat-label">Мораль</div>
+                                <div class="pdf-stat-value" id="pdf-morale"></div>
+                            </div>
+                            <div class="pdf-stat-item">
+                                <div class="pdf-stat-label">Авторитет</div>
+                                <div class="pdf-stat-value" id="pdf-authority"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pdf-section">
+                        <h2 class="pdf-section-title">Броня</h2>
+                        <table class="pdf-table" id="pdf-armor-table">
+                            <tr>
+                                <th>Часть тела</th>
+                                <th>Название</th>
+                                <th>Защита</th>
+                                <th>Требования</th>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="pdf-column">
+                    <div class="pdf-section">
+                        <h2 class="pdf-section-title">Оружие</h2>
+                        <table class="pdf-table" id="pdf-weapons-table">
+                            <tr>
+                                <th>Название</th>
+                                <th>Кубы урона</th>
+                                <th>Особое свойство</th>
+                            </tr>
+                        </table>
+                    </div>
+
+                    <div class="pdf-section">
+                        <h2 class="pdf-section-title">Амуниция</h2>
+                        <div class="pdf-stats-grid">
+                            <div class="pdf-stat-item">
+                                <div class="pdf-stat-label">Лечение</div>
+                                <div class="pdf-stat-value" id="pdf-healing"></div>
+                            </div>
+                            <div class="pdf-stat-item">
+                                <div class="pdf-stat-label">Валюта</div>
+                                <div class="pdf-stat-value" id="pdf-currency"></div>
+                            </div>
+                            <div class="pdf-stat-item">
+                                <div class="pdf-stat-label">Артефакты</div>
+                                <div class="pdf-stat-value" id="pdf-artifacts"></div>
+                            </div>
+                            <div class="pdf-stat-item">
+                                <div class="pdf-stat-label">Рюкзак</div>
+                                <div class="pdf-stat-value" id="pdf-backpack"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="pdf-section">
+                        <h2 class="pdf-section-title">Навыки</h2>
+                        <div>
+                            <h3>Боевые навыки</h3>
+                            <div class="pdf-textarea" id="pdf-combat-skills"></div>
+
+                            <h3>Основные навыки</h3>
+                            <div class="pdf-textarea" id="pdf-basic-skills"></div>
+
+                            <h3>Специализации</h3>
+                            <div class="pdf-textarea" id="pdf-specializations"></div>
+                        </div>
+                    </div>
+
+                    <div class="pdf-section">
+                        <h2 class="pdf-section-title">Модификации</h2>
+                        <div class="pdf-textarea" id="pdf-modifications"></div>
+                    </div>
+
+                    <div class="pdf-section">
+                        <h2 class="pdf-section-title">Инвентарь</h2>
+                        <div class="pdf-textarea" id="pdf-inventory"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('backToHandbook').addEventListener('click', function() {
+    window.location.href = 'index.html'; // Возврат на главную страницу ГОР
+});
+        document.getElementById('backToHandbook').addEventListener('click', function() {
+            window.location.href = 'index.html';
+        });
+        // Улучшенный цифровой дождь с символами Хищника
+        function initDigitalRain() {
+            // Оптимизированная версия анимации дождя
+            const canvas = document.getElementById('digitalRainCanvas');
+            const ctx = canvas.getContext('2d');
+
+            // Установка размеров canvas
+            function resizeCanvas() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+
+            // Набор символов - оптимизирован для производительности
+            const katakana = 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン';
+            const matrixSymbols = '01アカサタナハマヤラワイキシチニヒミリヰウクスツヌフムユルンエケセテネヘメレヱオコソトノホモヨロヲ';
+            const hunterSymbols = '▶◀⌘⌚⌛⏏⏩⏪';
+            const numbers = '0123456789';
+            const symbols = '!@#$%&*+-=[]{}|;:,<>?';
+
+            // Общий набор символов
+            const allSymbols = (katakana + matrixSymbols + hunterSymbols + numbers + symbols).split('');
+
+            // Создание капель дождя
+            const rainDrops = [];
+            const rainCount = Math.min(400, Math.floor(window.innerWidth * window.innerHeight / 3000));
+
+            // Предварительно созданные цвета
+            const colors = {
+                predator: '#ff0030',
+                matrix: '#00f0ff',
+                regular: ['#0088ff', '#00aaff', '#0099ff']
+            };
+
+            // Предварительно созданные шрифты
+            const fonts = ['12px', '14px', '16px', '18px'].map(size => `${size} 'Courier New', monospace`);
+
+            class RainDrop {
+                constructor() {
+                    this.reset();
+                }
+
+                reset() {
+                    this.x = Math.random() * canvas.width;
+                    this.y = Math.random() * -canvas.height;
+                    this.z = Math.random() * 0.5 + 0.5;
+                    this.speed = Math.random() * 4 + 3;
+                    this.opacity = Math.random() * 0.5 + 0.3;
+
+                    // Генерируем символ
+                    this.symbol = allSymbols[Math.floor(Math.random() * allSymbols.length)];
+
+                    // Определяем тип дождя
+                    this.type = Math.random();
+
+                    if (this.type < 0.05) {
+                        // Хищник - красные символы
+                        this.color = colors.predator;
+                        this.font = fonts[3];
+                    } else if (this.type < 0.25) {
+                        // Матрица - яркие синие символы
+                        this.color = colors.matrix;
+                        this.font = fonts[2];
+                    } else {
+                        // Обычный дождь
+                        this.color = colors.regular[Math.floor(Math.random() * colors.regular.length)];
+                        this.font = fonts[Math.floor(Math.random() * 2)];
+                    }
+                }
+
+                update() {
+                    this.y += this.speed * this.z;
+                    this.x += 0.3 * this.z; // Легкий ветер
+
+                    if (this.y > canvas.height) {
+                        this.reset();
+                        this.y = -20;
+                    }
+                }
+
+                draw() {
+                    ctx.font = this.font;
+                    ctx.textAlign = 'center';
+                    ctx.fillStyle = this.color;
+                    ctx.globalAlpha = this.opacity;
+                    ctx.fillText(this.symbol, this.x, this.y);
+                    ctx.globalAlpha = 1;
+                }
+            }
+
+            // Создание капель
+            for (let i = 0; i < rainCount; i++) {
+                rainDrops.push(new RainDrop());
+            }
+
+            // Оптимизация анимации
+            let lastTime = 0;
+            const fps = 30;
+            const interval = 1000 / fps;
+
+            function animateRain(timestamp) {
+                requestAnimationFrame(animateRain);
+
+                // Контроль FPS
+                const delta = timestamp - lastTime;
+                if (delta < interval) return;
+
+                lastTime = timestamp - (delta % interval);
+
+                // Очистка экрана с эффектом размытия
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                // Обновление и отрисовка капель
+                for (let i = 0; i < rainDrops.length; i++) {
+                    rainDrops[i].update();
+                    rainDrops[i].draw();
+                }
+            }
+
+            // Запуск анимации
+            animateRain(0);
+
+            // Эффект сканирования прицела
+            const predatorVision = document.querySelector('.predator-vision');
+            let scanDirection = 1;
+
+            function updateScan() {
+                const currentSize = parseFloat(predatorVision.style.width) || 300;
+                const newSize = currentSize + scanDirection * 0.5;
+
+                if (newSize > 320 || newSize < 280) {
+                    scanDirection *= -1;
+                }
+
+                predatorVision.style.width = `${newSize}px`;
+                predatorVision.style.height = `${newSize}px`;
+
+                requestAnimationFrame(updateScan);
+            }
+
+            updateScan();
+
+            // Статус системы
+            const systemStatus = document.querySelector('.system-status');
+            const statusMessages = [
+                "SYSTEM: OPTIMIZED RAIN v2.0",
+                "FPS: STABLE",
+                "RAIN DROPS: " + rainCount,
+                "GPU ACCELERATION: ACTIVE",
+                "PREDATOR_SCAN: OPERATIONAL"
+            ];
+
+            let statusIndex = 0;
+            setInterval(() => {
+                statusIndex = (statusIndex + 1) % statusMessages.length;
+                systemStatus.textContent = statusMessages[statusIndex];
+            }, 3000);
+        }
+
+        // Initialize radar chart
+        let radarChart;
+        function initRadarChart() {
+            const ctx = document.getElementById('radarChart').getContext('2d');
+            radarChart = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: ['Сила', 'Ловкость', 'Меткость', 'Интеллект', 'Дух', 'Выносливость'],
+                    datasets: [{
+                        label: 'Характеристики',
+                        data: [5, 5, 5, 5, 5, 5],
+                        backgroundColor: 'rgba(0, 247, 255, 0.2)',
+                        borderColor: '#00f7ff',
+                        pointBackgroundColor: [
+                            '#ff073a', // Красный - Сила
+                            '#ffff00', // Желтый - Ловкость
+                            '#00ff00', // Зеленый - Меткость
+                            '#00bfff', // Голубой - Интеллект
+                            '#800080', // Фиолетовый - Дух
+                            '#ff00ff'  // Розовый - Выносливость
+                        ],
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: '#00f7ff'
+                    }]
+                },
+                options: {
+                    scales: {
+                        r: {
+                            angleLines: {
+                                color: 'rgba(0, 247, 255, 0.2)'
+                            },
+                            grid: {
+                                color: 'rgba(0, 247, 255, 0.2)'
+                            },
+                            pointLabels: {
+                                color: '#00f7ff',
+                                font: {
+                                    size: 12
+                                }
+                            },
+                            ticks: {
+                                backdropColor: 'transparent',
+                                color: 'rgba(0, 247, 255, 0.5)',
+                                stepSize: 2,
+                                z: 1
+                            },
+                            min: 0,
+                            max: 10
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function (context) {
+                                    return context.dataset.label + ': ' + context.raw;
+                                }
+                            }
+                        }
+                    },
+                    maintainAspectRatio: false
+                }
+            });
+        }
+
+        // Calculate derived stats
+        function calculateStats() {
+            const strength = parseInt(document.getElementById('strength').value) || 0;
+            const agility = parseInt(document.getElementById('agility').value) || 0;
+            const spirit = parseInt(document.getElementById('spirit').value) || 0;
+            const intellect = parseInt(document.getElementById('intellect').value) || 0;
+            const hpRaceBonus = parseInt(document.getElementById('hpRaceBonus').value) || 0;
+            const manaRaceBonus = parseInt(document.getElementById('manaRaceBonus').value) || 0;
+
+            // Calculate endurance and accuracy
+            const endurance = Math.floor((strength + spirit) / 2);
+            const accuracy = Math.floor((agility + intellect) / 2);
+
+            // Update max HP and Mana with race bonuses
+            const maxHp = (10 * strength) + (5 * spirit) + hpRaceBonus;
+            const maxMana = (10 * spirit) + (5 * intellect) + manaRaceBonus;
+
+            document.getElementById('maxHp').textContent = maxHp;
+            document.getElementById('maxMana').textContent = maxMana;
+
+            // Update radar chart
+            if (radarChart) {
+                radarChart.data.datasets[0].data = [
+                    strength,
+                    agility,
+                    accuracy,
+                    intellect,
+                    spirit,
+                    endurance
+                ];
+                radarChart.update();
+            }
+
+            return { endurance, accuracy, maxHp, maxMana };
+        }
+
+        // Add armor row
+        document.getElementById('addArmorRow').addEventListener('click', function () {
+            const table = document.getElementById('armorTable');
+            const newRow = document.createElement('tr');
+            newRow.innerHTML = `
+                <td><input type="text" placeholder="Часть тела"></td>
+                <td><input type="text" class="armor-name"></td>
+                <td><input type="number" class="armor-protection" min="0"></td>
+                <td><input type="text" class="armor-requirements"></td>
+            `;
+            table.appendChild(newRow);
+        });
+
+        // Remove last armor row
+        document.getElementById('removeLastArmorRow').addEventListener('click', function () {
+            const table = document.getElementById('armorTable');
+            // Не удаляем базовые строки (голова, торс, руки, ноги)
+            if (table.rows.length > 5) {
+                table.deleteRow(table.rows.length - 1);
+            } else {
+                alert('Нельзя удалить базовые элементы брони');
+            }
+        });
+
+        // Add weapon row
+        document.getElementById('addWeaponRow').addEventListener('click', function () {
+            const table = document.getElementById('weaponsTable');
+            const newRow = document.createElement('tr');
+            newRow.innerHTML = `
+                <td><input type="text" class="weapon-name"></td>
+                <td><input type="text" class="weapon-damage"></td>
+                <td><input type="text" class="weapon-special"></td>
+            `;
+            table.appendChild(newRow);
+        });
+
+        // Remove last weapon row
+        document.getElementById('removeLastWeaponRow').addEventListener('click', function () {
+            const table = document.getElementById('weaponsTable');
+            // Оставляем минимум одну строку для оружия
+            if (table.rows.length > 2) {
+                table.deleteRow(table.rows.length - 1);
+            } else {
+                alert('Должна остаться хотя бы одна строка с оружием');
+            }
+        });
+
+        // Update stats when input changes
+        document.getElementById('strength').addEventListener('input', calculateStats);
+        document.getElementById('agility').addEventListener('input', calculateStats);
+        document.getElementById('spirit').addEventListener('input', calculateStats);
+        document.getElementById('intellect').addEventListener('input', calculateStats);
+        document.getElementById('hpRaceBonus').addEventListener('input', calculateStats);
+        document.getElementById('manaRaceBonus').addEventListener('input', calculateStats);
+
+        // PDF Viewer functionality
+        document.getElementById('downloadSheet').addEventListener('click', function () {
+            // Собираем данные из формы
+            const characterData = {
+                name: document.getElementById('characterName').value || 'Безымянный',
+                race: document.getElementById('characterRace').value || 'Не указана',
+                archetype: document.getElementById('characterArchetype').value || 'Не указан',
+                level: document.getElementById('characterLevel').value || '1',
+                age: document.getElementById('characterAge').value || '25',
+                image: document.getElementById('characterImagePreview').src || '',
+                strength: document.getElementById('strength').value || '5',
+                agility: document.getElementById('agility').value || '5',
+                spirit: document.getElementById('spirit').value || '5',
+                intellect: document.getElementById('intellect').value || '5',
+                hp: document.getElementById('hp').value || '50',
+                maxHp: document.getElementById('maxHp').textContent || '50',
+                mana: document.getElementById('mana').value || '30',
+                maxMana: document.getElementById('maxMana').textContent || '30',
+                morale: document.getElementById('morale').value || '0',
+                authority: document.getElementById('authority').value || '0',
+                combatSkills: document.getElementById('combatSkills').value || '',
+                basicSkills: document.getElementById('basicSkills').value || '',
+                specializations: document.getElementById('specializations').value || '',
+                modifications: document.getElementById('modifications').value || '',
+                inventory: document.getElementById('inventory').value || '',
+                healing: document.getElementById('healing').value || '',
+                currency: document.getElementById('currency').value || '',
+                artifacts: document.getElementById('artifacts').value || '',
+                backpack: document.getElementById('backpack').value || '',
+                armor: {
+                    head: {
+                        name: document.getElementById('head-armor-name').value || '',
+                        protection: document.getElementById('head-armor-protection').value || '',
+                        requirements: document.getElementById('head-armor-requirements').value || ''
+                    },
+                    torso: {
+                        name: document.getElementById('torso-armor-name').value || '',
+                        protection: document.getElementById('torso-armor-protection').value || '',
+                        requirements: document.getElementById('torso-armor-requirements').value || ''
+                    },
+                    arms: {
+                        name: document.getElementById('arms-armor-name').value || '',
+                        protection: document.getElementById('arms-armor-protection').value || '',
+                        requirements: document.getElementById('arms-armor-requirements').value || ''
+                    },
+                    legs: {
+                        name: document.getElementById('legs-armor-name').value || '',
+                        protection: document.getElementById('legs-armor-protection').value || '',
+                        requirements: document.getElementById('legs-armor-requirements').value || ''
+                    },
+                    vulnerability: document.getElementById('vulnerability').value || ''
+                }
+            };
+
+            // Собираем оружие
+            characterData.weapons = [];
+            document.querySelectorAll('#weaponsTable tr:not(:first-child)').forEach(row => {
+                const name = row.querySelector('.weapon-name').value || '';
+                const damage = row.querySelector('.weapon-damage').value || '';
+                const special = row.querySelector('.weapon-special').value || '';
+
+                if (name || damage || special) {
+                    characterData.weapons.push({ name, damage, special });
+                }
+            });
+
+            // Заполняем PDF просмотрщик
+            fillPdfViewer(characterData);
+
+            // Показываем PDF просмотрщик
+            document.getElementById('pdf-viewer').style.display = 'block';
+        });
+
+        function fillPdfViewer(data) {
+            // Основная информация
+            document.getElementById('pdf-name').textContent = data.name;
+            document.getElementById('pdf-race').textContent = data.race;
+            document.getElementById('pdf-archetype').textContent = data.archetype;
+            document.getElementById('pdf-level').textContent = data.level;
+            document.getElementById('pdf-age').textContent = data.age;
+
+            // Изображение персонажа
+            const charImage = document.getElementById('pdf-character-image');
+            if (data.image) {
+                charImage.src = data.image;
+                charImage.style.display = 'block';
+            } else {
+                charImage.style.display = 'none';
+            }
+
+            // Характеристики
+            document.getElementById('pdf-strength').textContent = data.strength;
+            document.getElementById('pdf-agility').textContent = data.agility;
+            document.getElementById('pdf-spirit').textContent = data.spirit;
+            document.getElementById('pdf-intellect').textContent = data.intellect;
+
+            // Рассчитываем производные характеристики
+            const strength = parseInt(data.strength) || 0;
+            const agility = parseInt(data.agility) || 0;
+            const spirit = parseInt(data.spirit) || 0;
+            const intellect = parseInt(data.intellect) || 0;
+
+            const endurance = Math.floor((strength + spirit) / 2);
+            const accuracy = Math.floor((agility + intellect) / 2);
+
+            document.getElementById('pdf-endurance').textContent = endurance;
+            document.getElementById('pdf-accuracy').textContent = accuracy;
+
+            // Ресурсы
+            document.getElementById('pdf-hp').textContent = data.hp;
+            document.getElementById('pdf-max-hp').textContent = data.maxHp;
+            document.getElementById('pdf-mana').textContent = data.mana;
+            document.getElementById('pdf-max-mana').textContent = data.maxMana;
+            document.getElementById('pdf-morale').textContent = data.morale;
+            document.getElementById('pdf-authority').textContent = data.authority;
+
+            // Создаем радарную диаграмму
+            const ctx = document.getElementById('pdf-radar-chart').getContext('2d');
+            new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: ['Сила', 'Ловкость', 'Меткость', 'Интеллект', 'Дух', 'Выносливость'],
+                    datasets: [{
+                        data: [
+                            strength,
+                            agility,
+                            accuracy,
+                            intellect,
+                            spirit,
+                            endurance
+                        ],
+                        backgroundColor: 'rgba(0, 247, 255, 0.2)',
+                        borderColor: '#00f7ff',
+                        pointBackgroundColor: [
+                            '#ff073a', '#ffff00', '#00ff00',
+                            '#00bfff', '#800080', '#ff00ff'
+                        ],
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: '#00f7ff'
+                    }]
+                },
+                options: {
+                    scales: {
+                        r: {
+                            angleLines: { color: 'rgba(0, 247, 255, 0.2)' },
+                            grid: { color: 'rgba(0, 247, 255, 0.2)' },
+                            pointLabels: {
+                                color: '#00f7ff',
+                                font: {
+                                    size: 10
+                                }
+                            },
+                            ticks: {
+                                backdropColor: 'transparent',
+                                color: 'rgba(0, 247, 255, 0.5)',
+                                stepSize: 2,
+                                z: 1
+                            },
+                            min: 0,
+                            max: 10
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function (context) {
+                                    return context.dataset.label + ': ' + context.raw;
+                                }
+                            }
+                        }
+                    },
+                    maintainAspectRatio: false
+                }
+            });
+
+            // Броня
+            const armorTable = document.getElementById('pdf-armor-table');
+            // Очищаем таблицу, кроме заголовка
+            while (armorTable.rows.length > 1) {
+                armorTable.deleteRow(1);
+            }
+
+            // Добавляем строки брони
+            const armorParts = [
+                { part: 'Голова', data: data.armor.head },
+                { part: 'Торс', data: data.armor.torso },
+                { part: 'Руки', data: data.armor.arms },
+                { part: 'Ноги', data: data.armor.legs }
+            ];
+
+            armorParts.forEach(armor => {
+                if (armor.data.name) {
+                    const row = armorTable.insertRow();
+                    row.innerHTML = `
+                        <td>${armor.part}</td>
+                        <td>${armor.data.name}</td>
+                        <td>${armor.data.protection}</td>
+                        <td>${armor.data.requirements}</td>
+                    `;
+                }
+            });
+
+            // Добавляем уязвимость, если указана
+            if (data.armor.vulnerability) {
+                const row = armorTable.insertRow();
+                row.innerHTML = `
+                    <td colspan="2">Уязвимость</td>
+                    <td colspan="2">${data.armor.vulnerability}</td>
+                `;
+            }
+
+            // Оружие
+            const weaponsTable = document.getElementById('pdf-weapons-table');
+            // Очищаем таблицу, кроме заголовка
+            while (weaponsTable.rows.length > 1) {
+                weaponsTable.deleteRow(1);
+            }
+
+            // Добавляем оружие
+            data.weapons.forEach(weapon => {
+                const row = weaponsTable.insertRow();
+                row.innerHTML = `
+                    <td>${weapon.name}</td>
+                    <td>${weapon.damage}</td>
+                    <td>${weapon.special}</td>
+                `;
+            });
+
+            // Амуниция
+            document.getElementById('pdf-healing').textContent = data.healing;
+            document.getElementById('pdf-currency').textContent = data.currency;
+            document.getElementById('pdf-artifacts').textContent = data.artifacts;
+            document.getElementById('pdf-backpack').textContent = data.backpack;
+
+            // Навыки
+            document.getElementById('pdf-combat-skills').textContent = data.combatSkills;
+            document.getElementById('pdf-basic-skills').textContent = data.basicSkills;
+            document.getElementById('pdf-specializations').textContent = data.specializations;
+
+            // Модификации и инвентарь
+            document.getElementById('pdf-modifications').textContent = data.modifications;
+            document.getElementById('pdf-inventory').textContent = data.inventory;
+        }
+
+        // Закрыть PDF просмотрщик
+        document.getElementById('closePdf').addEventListener('click', function () {
+            document.getElementById('pdf-viewer').style.display = 'none';
+        });
+
+        // Скачать PDF
+        document.getElementById('downloadPdf').addEventListener('click', function () {
+            const pdfContainer = document.querySelector('.pdf-container');
+
+            html2canvas(pdfContainer, {
+                scale: 2,
+                useCORS: true,
+                logging: false,
+                backgroundColor: '#0d0208'
+            }).then(canvas => {
+                const imgData = canvas.toDataURL('image/jpeg', 0.9);
+                const pdf = new jspdf.jsPDF('p', 'mm', 'a4');
+                const pageWidth = pdf.internal.pageSize.getWidth();
+                const pageHeight = pdf.internal.pageSize.getHeight();
+
+                // Рассчитываем размеры изображения
+                const imgWidth = pageWidth - 20; // Отступы по 10мм с каждой стороны
+                const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+                // Добавляем изображение в PDF
+                pdf.addImage(imgData, 'JPEG', 10, 10, imgWidth, imgHeight);
+
+                // Сохраняем PDF
+                const charName = document.getElementById('pdf-name').textContent || 'Персонаж';
+                pdf.save(`Лист персонажа - ${charName}.pdf`);
+            });
+        });
+
+        // Печать
+        document.getElementById('printPdf').addEventListener('click', function () {
+            window.print();
+        });
+
+        // Handle character image upload
+        document.getElementById('characterImageUpload').addEventListener('change', function (e) {
+            if (e.target.files.length > 0) {
+                const file = e.target.files[0];
+                if (file.type === 'image/png' || file.type === 'image/jpeg') {
+                    const reader = new FileReader();
+                    reader.onload = function (event) {
+                        const imgPreview = document.getElementById('characterImagePreview');
+                        imgPreview.src = event.target.result;
+                        imgPreview.style.display = 'block';
+                    };
+                    reader.readAsDataURL(file);
+                } else {
+                    alert('Пожалуйста, загрузите файл в формате PNG или JPEG');
+                }
+            }
+        });
+
+        // Save character
+        document.getElementById('saveCharacter').addEventListener('click', function () {
+            const characterName = document.getElementById('characterName').value;
+            if (!characterName) {
+                alert('Пожалуйста, введите имя персонажа');
+                return;
+            }
+
+            const stats = calculateStats();
+
+            // Gather weapons
+            const weapons = [];
+            document.querySelectorAll('#weaponsTable tr:not(:first-child)').forEach(row => {
+                const name = row.querySelector('.weapon-name').value;
+                const damage = row.querySelector('.weapon-damage').value;
+                const special = row.querySelector('.weapon-special').value;
+                if (name || damage || special) {
+                    weapons.push({ name, damage, special });
+                }
+            });
+
+            // Get character image if exists
+            const characterImage = document.getElementById('characterImagePreview').src;
+            const hasImage = characterImage && !characterImage.startsWith('data:');
+
+            const character = {
+                id: Date.now(),
+                name: characterName,
+                race: document.getElementById('characterRace').value,
+                archetype: document.getElementById('characterArchetype').value,
+                level: parseInt(document.getElementById('characterLevel').value) || 1,
+                age: parseInt(document.getElementById('characterAge').value) || 25,
+                image: hasImage ? characterImage : null,
+                strength: parseInt(document.getElementById('strength').value) || 0,
+                agility: parseInt(document.getElementById('agility').value) || 0,
+                spirit: parseInt(document.getElementById('spirit').value) || 0,
+                intellect: parseInt(document.getElementById('intellect').value) || 0,
+                hpRaceBonus: parseInt(document.getElementById('hpRaceBonus').value) || 0,
+                manaRaceBonus: parseInt(document.getElementById('manaRaceBonus').value) || 0,
+                endurance: stats.endurance,
+                accuracy: stats.accuracy,
+                hp: parseInt(document.getElementById('hp').value) || 0,
+                maxHp: stats.maxHp,
+                mana: parseInt(document.getElementById('mana').value) || 0,
+                maxMana: stats.maxMana,
+                morale: parseInt(document.getElementById('morale').value) || 0,
+                authority: parseInt(document.getElementById('authority').value) || 0,
+                cyberpsychosis: parseInt(document.getElementById('cyberpsychosis').value) || 0,
+                overload: parseInt(document.getElementById('overload').value) || 0,
+                hasCyberpsychosis: document.getElementById('hasCyberpsychosis').checked,
+                hasOverload: document.getElementById('hasOverload').checked,
+                inventory: document.getElementById('inventory').value,
+                combatSkills: document.getElementById('combatSkills').value,
+                basicSkills: document.getElementById('basicSkills').value,
+                specializations: document.getElementById('specializations').value,
+                modifications: document.getElementById('modifications').value,
+                notes: document.getElementById('notes').value,
+                armor: {
+                    head: {
+                        name: document.getElementById('head-armor-name').value,
+                        protection: document.getElementById('head-armor-protection').value,
+                        requirements: document.getElementById('head-armor-requirements').value
+                    },
+                    torso: {
+                        name: document.getElementById('torso-armor-name').value,
+                        protection: document.getElementById('torso-armor-protection').value,
+                        requirements: document.getElementById('torso-armor-requirements').value
+                    },
+                    arms: {
+                        name: document.getElementById('arms-armor-name').value,
+                        protection: document.getElementById('arms-armor-protection').value,
+                        requirements: document.getElementById('arms-armor-requirements').value
+                    },
+                    legs: {
+                        name: document.getElementById('legs-armor-name').value,
+                        protection: document.getElementById('legs-armor-protection').value,
+                        requirements: document.getElementById('legs-armor-requirements').value
+                    },
+                    vulnerability: document.getElementById('vulnerability').value
+                },
+                weapons: weapons,
+                ammunition: {
+                    healing: document.getElementById('healing').value,
+                    currency: document.getElementById('currency').value,
+                    artifacts: document.getElementById('artifacts').value,
+                    backpack: document.getElementById('backpack').value
+                },
+                dmNotes: ''
+            };
+
+            // Save to localStorage
+            let characters = JSON.parse(localStorage.getItem('characters')) || [];
+            characters = characters.filter(c => c.id !== character.id); // Remove existing if any
+            characters.push(character);
+            localStorage.setItem('characters', JSON.stringify(characters));
+
+            alert('Персонаж сохранен!');
+            renderCharacters();
+        });
+
+        function updateDerivedStatsInDOM(card, char) {
+            const strength = parseInt(char.strength) || 0;
+            const agility = parseInt(char.agility) || 0;
+            const spirit = parseInt(char.spirit) || 0;
+            const intellect = parseInt(char.intellect) || 0;
+            const hpRaceBonus = parseInt(char.hpRaceBonus) || 0;
+            const manaRaceBonus = parseInt(char.manaRaceBonus) || 0;
+
+            // Пересчет по формулам
+            const endurance = Math.floor((strength + spirit) / 2);
+            const accuracy = Math.floor((agility + intellect) / 2);
+            const maxHp = (10 * strength) + (5 * spirit) + hpRaceBonus;
+            const maxMana = (10 * spirit) + (5 * intellect) + manaRaceBonus;
+
+            // Обновляем DOM
+            const enduranceElement = card.querySelector('.stat-value-dm[data-stat="endurance"]');
+            const accuracyElement = card.querySelector('.stat-value-dm[data-stat="accuracy"]');
+
+            if (enduranceElement) enduranceElement.textContent = endurance;
+            if (accuracyElement) accuracyElement.textContent = accuracy;
+
+            // Обновляем HP и Mana
+            const hpElement = card.querySelector('.stat-value[data-stat="hp"]');
+            const manaElement = card.querySelector('.stat-value[data-stat="mana"]');
+
+            if (hpElement) hpElement.textContent = `${char.hp}/${maxHp}`;
+            if (manaElement) manaElement.textContent = `${char.mana}/${maxMana}`;
+
+            // Обновляем инпуты HP и Mana
+            const hpInput = card.querySelector('input[data-field="hp"]');
+            const manaInput = card.querySelector('input[data-field="mana"]');
+
+            if (hpInput) hpInput.max = maxHp;
+            if (manaInput) manaInput.max = maxMana;
+        }
+
+        // Обновление поля персонажа
+        function updateCharacterField(id, field, value) {
+            let characters = JSON.parse(localStorage.getItem('characters')) || [];
+            const index = characters.findIndex(c => c.id === id);
+            if (index === -1) return;
+
+            // Обновляем значение поля
+            const fieldParts = field.split('.');
+            if (fieldParts.length > 1) {
+                let obj = characters[index];
+                for (let i = 0; i < fieldParts.length - 1; i++) {
+                    if (!obj[fieldParts[i]]) obj[fieldParts[i]] = {};
+                    obj = obj[fieldParts[i]];
+                }
+                obj[fieldParts[fieldParts.length - 1]] = value;
+            } else {
+                characters[index][field] = value;
+            }
+
+            localStorage.setItem('characters', JSON.stringify(characters));
+
+            // Находим карточку в DOM
+            const card = document.querySelector(`.character-card[data-id="${id}"]`);
+            if (!card) return;
+
+            // Обновляем производные характеристики
+            updateDerivedStatsInDOM(card, characters[index]);
+
+            // Обновляем только если это базовые характеристики
+            if (['strength', 'agility', 'spirit', 'intellect', 'hpRaceBonus', 'manaRaceBonus'].includes(field)) {
+                // Обновляем radar chart
+                const radarId = `radar-${id}`;
+                const radarCanvas = card.querySelector(`#${radarId}`);
+                if (radarCanvas) {
+                    const ctx = radarCanvas.getContext('2d');
+                    // Удаляем старый график если существует
+                    if (radarCanvas.chart) {
+                        radarCanvas.chart.destroy();
+                    }
+
+                    // Создаем новый график
+                    radarCanvas.chart = new Chart(ctx, {
+                        type: 'radar',
+                        data: {
+                            labels: ['С', 'Л', 'М', 'И', 'Д', 'В'],
+                            datasets: [{
+                                data: [
+                                    characters[index].strength,
+                                    characters[index].agility,
+                                    characters[index].accuracy,
+                                    characters[index].intellect,
+                                    characters[index].spirit,
+                                    characters[index].endurance
+                                ],
+                                backgroundColor: 'rgba(0, 247, 255, 0.2)',
+                                borderColor: '#00f7ff',
+                                pointBackgroundColor: [
+                                    '#ff073a', '#ffff00', '#00ff00',
+                                    '#00bfff', '#800080', '#ff00ff'
+                                ],
+                                pointBorderColor: '#fff',
+                                pointHoverBackgroundColor: '#fff',
+                                pointHoverBorderColor: '#00f7ff'
+                            }]
+                        },
+                        options: {
+                            scales: {
+                                r: {
+                                    angleLines: { color: 'rgba(0, 247, 255, 0.2)' },
+                                    grid: { color: 'rgba(0, 247, 255, 0.2)' },
+                                    pointLabels: { display: false },
+                                    ticks: { display: false },
+                                    min: 0,
+                                    max: 10
+                                }
+                            },
+                            plugins: { legend: { display: false } },
+                            maintainAspectRatio: false
+                        }
+                    });
+                }
+            }
+        }
+
+        // Render characters for DM view
+        function renderCharacters() {
+            const characters = JSON.parse(localStorage.getItem('characters')) || [];
+            const container = document.getElementById('charactersList');
+            const sidebarContainer = document.getElementById('sidebarCharacters');
+            container.innerHTML = '';
+            sidebarContainer.innerHTML = '';
+
+            if (characters.length === 0) {
+                container.innerHTML = '<div class="hint" style="text-align: center; padding: 20px;">Нет сохраненных персонажей</div>';
+                sidebarContainer.innerHTML = '<div class="hint" style="text-align: center; padding: 20px;">Нет сохраненных персонажей</div>';
+                return;
+            }
+
+            characters.forEach(char => {
+                // Sidebar character card
+                const sidebarCard = document.createElement('div');
+                sidebarCard.className = 'sidebar-character';
+                sidebarCard.dataset.id = char.id;
+                sidebarCard.innerHTML = `
+                    <div class="sidebar-character-name">${char.name}</div>
+                    ${char.image ? `<img src="${char.image}" class="sidebar-character-image" alt="${char.name}">` : ''}
+                    <div class="sidebar-character-stats">
+                        <div class="sidebar-stat-item">
+                            <div class="sidebar-stat-value">${char.hp}/${char.maxHp}</div>
+                            <div class="sidebar-stat-label">ХП</div>
+                        </div>
+                        <div class="sidebar-stat-item">
+                            <div class="sidebar-stat-value">${char.mana}/${char.maxMana}</div>
+                            <div class="sidebar-stat-label">Мана</div>
+                        </div>
+                        <div class="sidebar-stat-item">
+                            <div class="sidebar-stat-value">${char.morale}</div>
+                            <div class="sidebar-stat-label">Мораль</div>
+                        </div>
+                        <div class="sidebar-stat-item">
+                            <div class="sidebar-stat-value">${char.authority}</div>
+                            <div class="sidebar-stat-label">Авторитет</div>
+                        </div>
+                    </div>
+                    <button class="btn" style="width: 100%; margin-top: 10px;" data-id="${char.id}">Выбрать</button>
+                `;
+                sidebarContainer.appendChild(sidebarCard);
+
+                // Main character card
+                const card = document.createElement('div');
+                card.className = 'character-card';
+                card.dataset.id = char.id;
+
+                // Compact view
+                const compactView = document.createElement('div');
+                compactView.className = 'compact-view';
+                compactView.innerHTML = `
+                    <div class="character-header">
+                        <div class="character-name">${char.name} (${char.race}) - ${char.archetype} (Ур. ${char.level}, Возр. ${char.age})</div>
+                        <div class="character-actions">
+                            <button class="expand-btn" data-id="${char.id}">📊</button>
+                            <button class="delete-btn" data-id="${char.id}">✕</button>
+                        </div>
+                    </div>
+                    
+                    ${char.image ? `
+                    <div class="character-image-container">
+                        <img src="${char.image}" class="character-image" alt="${char.name}">
+                    </div>
+                    ` : ''}
+                    
+                    <div class="compact-stats">
+                        <div class="compact-stat">
+                            <div class="compact-stat-value">${char.strength}</div>
+                            <div class="compact-stat-label">Сила</div>
+                        </div>
+                        <div class="compact-stat">
+                            <div class="compact-stat-value">${char.agility}</div>
+                            <div class="compact-stat-label">Ловкость</div>
+                        </div>
+                        <div class="compact-stat">
+                            <div class="compact-stat-value">${char.spirit}</div>
+                            <div class="compact-stat-label">Дух</div>
+                        </div>
+                        <div class="compact-stat">
+                            <div class="compact-stat-value">${char.intellect}</div>
+                            <div class="compact-stat-label">Интеллект</div>
+                        </div>
+                        <div class="compact-stat">
+                            <div class="compact-stat-value">${char.endurance}</div>
+                            <div class="compact-stat-label">Выносливость</div>
+                        </div>
+                        <div class="compact-stat">
+                            <div class="compact-stat-value">${char.accuracy}</div>
+                            <div class="compact-stat-label">Меткость</div>
+                        </div>
+                    </div>
+                    
+                    <div class="radar-container" style="height: 200px;">
+                        <canvas id="radar-${char.id}"></canvas>
+                    </div>
+                    
+                    <div class="character-stats">
+                        <div class="stat-item">
+                            <label>ХП:</label>
+                            <input type="number" class="editable-stat hp-input" data-id="${char.id}" data-field="hp" min="0" max="${char.maxHp}" value="${char.hp}">
+                            <div class="stat-label">/${char.maxHp}</div>
+                        </div>
+                        <div class="stat-item">
+                            <label>Мана:</label>
+                            <input type="number" class="editable-stat mana-input" data-id="${char.id}" data-field="mana" min="0" max="${char.maxMana}" value="${char.mana}">
+                            <div class="stat-label">/${char.maxMana}</div>
+                        </div>
+                        <div class="stat-item">
+                            <label>Мораль:</label>
+                            <input type="number" class="editable-stat" data-id="${char.id}" data-field="morale" min="-3" max="3" value="${char.morale}">
+                        </div>
+                        <div class="stat-item">
+                            <label>Авторитет:</label>
+                            <input type="number" class="editable-stat" data-id="${char.id}" data-field="authority" min="0" value="${char.authority}">
+                        </div>
+                        ${char.hasCyberpsychosis ? `
+                        <div class="stat-item">
+                            <label>Киберпсихоз:</label>
+                            <input type="number" class="editable-stat" data-id="${char.id}" data-field="cyberpsychosis" min="0" max="10" value="${char.cyberpsychosis}">
+                        </div>
+                        ` : ''}
+                        ${char.hasOverload ? `
+                        <div class="stat-item">
+                            <label>Перегрузка:</label>
+                            <input type="number" class="editable-stat" data-id="${char.id}" data-field="overload" min="0" max="100" value="${char.overload}">
+                        </div>
+                        ` : ''}
+                    </div>
+                    
+                    <div class="character-details">
+                        <h4>Инвентарь:</h4>
+                        <textarea class="editable-field inventory-field" data-id="${char.id}" data-field="inventory">${char.inventory || ''}</textarea>
+                        
+                        <h4>Заметки ДМа:</h4>
+                        <textarea class="editable-field dm-notes" data-id="${char.id}" data-field="dmNotes">${char.dmNotes || ''}</textarea>
+                    </div>
+                `;
+                card.appendChild(compactView);
+
+                // Expanded view
+                const expandedView = document.createElement('div');
+                expandedView.className = 'expanded-view';
+                expandedView.innerHTML = `
+                    <div class="character-header">
+                        <div class="character-name">${char.name} (${char.race}) - ${char.archetype} (Ур. ${char.level}, Возр. ${char.age})</div>
+                        <div class="character-actions">
+                            <button class="collapse-btn" data-id="${char.id}">▲ Свернуть</button>
+                            <button class="delete-btn" data-id="${char.id}">✕ Удалить</button>
+                        </div>
+                    </div>
+                    
+                    ${char.image ? `
+                    <div class="character-image-container">
+                        <img src="${char.image}" class="character-image expanded" alt="${char.name}">
+                    </div>
+                    ` : ''}
+                    
+                    <div class="stats-grid">
+                        <div class="stat-box">
+                            <div class="stat-label-dm">Сила</div>
+                            <input type="number" class="editable-stat" data-id="${char.id}" data-field="strength" min="0" max="10" value="${char.strength}">
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label-dm">Ловкость</div>
+                            <input type="number" class="editable-stat" data-id="${char.id}" data-field="agility" min="0" max="10" value="${char.agility}">
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label-dm">Дух</div>
+                            <input type="number" class="editable-stat" data-id="${char.id}" data-field="spirit" min="0" max="10" value="${char.spirit}">
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label-dm">Интеллект</div>
+                            <input type="number" class="editable-stat" data-id="${char.id}" data-field="intellect" min="0" max="10" value="${char.intellect}">
+                        </div>
+                        
+                        <!-- Редактируемые поля для выносливости и меткости -->
+                        <div class="stat-box">
+                            <div class="stat-label-dm">Выносливость</div>
+                            <input type="number" class="editable-stat" data-id="${char.id}" data-field="endurance" min="0" max="10" value="${char.endurance}">
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label-dm">Меткость</div>
+                            <input type="number" class="editable-stat" data-id="${char.id}" data-field="accuracy" min="0" max="10" value="${char.accuracy}">
+                        </div>
+                        
+                        <div class="stat-box">
+                            <div class="stat-label-dm">Бонус ХП от расы</div>
+                            <input type="number" class="editable-stat" data-id="${char.id}" data-field="hpRaceBonus" min="0" value="${char.hpRaceBonus}">
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label-dm">Бонус маны от расы</div>
+                            <input type="number" class="editable-stat" data-id="${char.id}" data-field="manaRaceBonus" min="0" value="${char.manaRaceBonus}">
+                        </div>
+                    </div>
+                    
+                    <div class="character-stats">
+                        <div class="stat-item">
+                            <div class="stat-value" data-stat="hp">${char.hp}/${char.maxHp}</div>
+                            <div class="stat-label">ХП</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" data-stat="mana">${char.mana}/${char.maxMana}</div>
+                            <div class="stat-label">Мана</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">${char.morale}</div>
+                            <div class="stat-label">Мораль</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value">${char.authority}</div>
+                            <div class="stat-label">Авторитет</div>
+                        </div>
+                        ${char.hasCyberpsychosis ? `
+                        <div class="stat-item">
+                            <div class="stat-value">${char.cyberpsychosis}</div>
+                            <div class="stat-label">Киберпсихоз</div>
+                        </div>
+                        ` : ''}
+                        ${char.hasOverload ? `
+                        <div class="stat-item">
+                            <div class="stat-value">${char.overload}%</div>
+                            <div class="stat-label">Перегрузка</div>
+                        </div>
+                        ` : ''}
+                    </div>
+                    
+                    <div class="character-details">
+                        <h4>Инвентарь:</h4>
+                        <textarea class="editable-field inventory-field" data-id="${char.id}" data-field="inventory">${char.inventory || ''}</textarea>
+                        
+                        <h4>Заметки ДМа:</h4>
+                        <textarea class="editable-field dm-notes" data-id="${char.id}" data-field="dmNotes">${char.dmNotes || ''}</textarea>
+                        
+                        <div class="expanded-section">
+                            <h4>Боевые навыки:</h4>
+                            <textarea class="editable-field" data-id="${char.id}" data-field="combatSkills">${char.combatSkills || ''}</textarea>
+                        </div>
+                        
+                        <div class="expanded-section">
+                            <h4>Основные навыки:</h4>
+                            <textarea class="editable-field" data-id="${char.id}" data-field="basicSkills">${char.basicSkills || ''}</textarea>
+                        </div>
+                        
+                        <div class="expanded-section">
+                            <h4>Специализации:</h4>
+                            <textarea class="editable-field" data-id="${char.id}" data-field="specializations">${char.specializations || ''}</textarea>
+                        </div>
+                        
+                        <div class="expanded-section">
+                            <h4>Модификации:</h4>
+                            <textarea class="editable-field" data-id="${char.id}" data-field="modifications">${char.modifications || ''}</textarea>
+                        </div>
+                        
+                        <div class="expanded-section">
+                            <h4>Броня:</h4>
+                            <div class="editable-field">Голова: <input type="text" class="editable-field" data-id="${char.id}" data-field="armor.head.name" value="${char.armor.head.name}"> (Защ: <input type="number" class="editable-field" data-id="${char.id}" data-field="armor.head.protection" value="${char.armor.head.protection}">, Треб: <input type="text" class="editable-field" data-id="${char.id}" data-field="armor.head.requirements" value="${char.armor.head.requirements}">)</div>
+                            <div class="editable-field">Торс: <input type="text" class="editable-field" data-id="${char.id}" data-field="armor.torso.name" value="${char.armor.torso.name}"> (Защ: <input type="number" class="editable-field" data-id="${char.id}" data-field="armor.torso.protection" value="${char.armor.torso.protection}">, Треб: <input type="text" class="editable-field" data-id="${char.id}" data-field="armor.torso.requirements" value="${char.armor.torso.requirements}">)</div>
+                            <div class="editable-field">Руки: <input type="text" class="editable-field" data-id="${char.id}" data-field="armor.arms.name" value="${char.armor.arms.name}"> (Защ: <input type="number" class="editable-field" data-id="${char.id}" data-field="armor.arms.protection" value="${char.armor.arms.protection}">, Треб: <input type="text" class="editable-field" data-id="${char.id}" data-field="armor.arms.requirements" value="${char.armor.arms.requirements}">)</div>
+                            <div class="editable-field">Ноги: <input type="text" class="editable-field" data-id="${char.id}" data-field="armor.legs.name" value="${char.armor.legs.name}"> (Защ: <input type="number" class="editable-field" data-id="${char.id}" data-field="armor.legs.protection" value="${char.armor.legs.protection}">, Треб: <input type="text" class="editable-field" data-id="${char.id}" data-field="armor.legs.requirements" value="${char.armor.legs.requirements}">)</div>
+                            <div class="editable-field">Уязвимость: <input type="text" class="editable-field" data-id="${char.id}" data-field="armor.vulnerability" value="${char.armor.vulnerability}"></div>
+                        </div>
+                        
+                        <div class="expanded-section">
+                            <h4>Оружие:</h4>
+                            ${char.weapons.map((weapon, index) => `
+                                <div class="editable-field">
+                                    Название: <input type="text" class="editable-field" data-id="${char.id}" data-field="weapons.${index}.name" value="${weapon.name}">
+                                    Урон: <input type="text" class="editable-field" data-id="${char.id}" data-field="weapons.${index}.damage" value="${weapon.damage}">
+                                    Особое: <input type="text" class="editable-field" data-id="${char.id}" data-field="weapons.${index}.special" value="${weapon.special}">
+                                </div>
+                            `).join('')}
+                        </div>
+                        
+                        <div class="expanded-section">
+                            <h4>Амуниция:</h4>
+                            <div class="editable-field">Лечение: <input type="text" class="editable-field" data-id="${char.id}" data-field="ammunition.healing" value="${char.ammunition.healing}"></div>
+                            <div class="editable-field">Валюта: <input type="text" class="editable-field" data-id="${char.id}" data-field="ammunition.currency" value="${char.ammunition.currency}"></div>
+                            <div class="editable-field">Артефакты: <input type="text" class="editable-field" data-id="${char.id}" data-field="ammunition.artifacts" value="${char.ammunition.artifacts}"></div>
+                            <div class="editable-field">Рюкзак: <input type="text" class="editable-field" data-id="${char.id}" data-field="ammunition.backpack" value="${char.ammunition.backpack}"></div>
+                        </div>
+                    </div>
+                `;
+                expandedView.style.display = 'none';
+                card.appendChild(expandedView);
+
+                container.appendChild(card);
+
+                // Render radar chart for this character
+                setTimeout(() => {
+                    const ctx = document.getElementById(`radar-${char.id}`).getContext('2d');
+                    const radarChart = new Chart(ctx, {
+                        type: 'radar',
+                        data: {
+                            labels: ['С', 'Л', 'М', 'И', 'Д', 'В'],
+                            datasets: [{
+                                data: [
+                                    char.strength,
+                                    char.agility,
+                                    char.accuracy,
+                                    char.intellect,
+                                    char.spirit,
+                                    char.endurance
+                                ],
+                                backgroundColor: 'rgba(0, 247, 255, 0.2)',
+                                borderColor: '#00f7ff',
+                                pointBackgroundColor: [
+                                    '#ff073a', '#ffff00', '#00ff00',
+                                    '#00bfff', '#800080', '#ff00ff'
+                                ],
+                                pointBorderColor: '#fff',
+                                pointHoverBackgroundColor: '#fff',
+                                pointHoverBorderColor: '#00f7ff'
+                            }]
+                        },
+                        options: {
+                            scales: {
+                                r: {
+                                    angleLines: { color: 'rgba(0, 247, 255, 0.2)' },
+                                    grid: { color: 'rgba(0, 247, 255, 0.2)' },
+                                    pointLabels: { display: false },
+                                    ticks: { display: false },
+                                    min: 0,
+                                    max: 10
+                                }
+                            },
+                            plugins: { legend: { display: false } },
+                            maintainAspectRatio: false
+                        }
+                    });
+
+                    // Сохраняем ссылку на график
+                    document.getElementById(`radar-${char.id}`).chart = radarChart;
+                }, 100);
+            });
+
+            // Add event listeners for actions
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    const id = parseInt(this.getAttribute('data-id'));
+                    deleteCharacter(id);
+                });
+            });
+
+            document.querySelectorAll('.expand-btn').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    const id = parseInt(this.getAttribute('data-id'));
+                    const card = this.closest('.character-card');
+
+                    // Collapse all other cards
+                    document.querySelectorAll('.character-card').forEach(c => {
+                        if (c !== card) {
+                            c.classList.remove('expanded');
+                            c.querySelector('.compact-view').style.display = 'block';
+                            c.querySelector('.expanded-view').style.display = 'none';
+                        }
+                    });
+
+                    // Expand this card
+                    card.classList.add('expanded');
+                    card.querySelector('.compact-view').style.display = 'none';
+                    card.querySelector('.expanded-view').style.display = 'block';
+                });
+            });
+
+            document.querySelectorAll('.collapse-btn').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    const id = parseInt(this.getAttribute('data-id'));
+                    const card = this.closest('.character-card');
+                    card.classList.remove('expanded');
+                    card.querySelector('.compact-view').style.display = 'block';
+                    card.querySelector('.expanded-view').style.display = 'none';
+                });
+            });
+
+            // Handle select character in sidebar
+            document.querySelectorAll('#sidebarCharacters button').forEach(btn => {
+                btn.addEventListener('click', function () {
+                    const id = parseInt(this.getAttribute('data-id'));
+                    const card = document.querySelector(`.character-card[data-id="${id}"]`);
+                    if (card) {
+                        // Collapse all cards
+                        document.querySelectorAll('.character-card').forEach(c => {
+                            c.classList.remove('expanded');
+                            c.querySelector('.compact-view').style.display = 'block';
+                            c.querySelector('.expanded-view').style.display = 'none';
+                        });
+
+                        // Expand selected card
+                        card.classList.add('expanded');
+                        card.querySelector('.compact-view').style.display = 'none';
+                        card.querySelector('.expanded-view').style.display = 'block';
+
+                        // Scroll to selected card
+                        card.scrollIntoView({ behavior: 'smooth' });
+                    }
+                });
+            });
+
+            // Handle editable fields
+            document.querySelectorAll('.editable-stat, .editable-field').forEach(field => {
+                field.addEventListener('change', function () {
+                    const id = parseInt(this.getAttribute('data-id'));
+                    const fieldName = this.getAttribute('data-field');
+                    const value = this.value;
+
+                    updateCharacterField(id, fieldName, value);
+                });
+            });
+        }
+
+        // Delete character
+        function deleteCharacter(id) {
+            if (!confirm('Вы уверены, что хотите удалить этого персонажа?')) return;
+
+            let characters = JSON.parse(localStorage.getItem('characters')) || [];
+            characters = characters.filter(c => c.id !== id);
+            localStorage.setItem('characters', JSON.stringify(characters));
+            renderCharacters();
+        }
+
+        // View switching
+        document.getElementById('playerViewBtn').addEventListener('click', function () {
+            document.getElementById('player-view').classList.add('active-view');
+            document.getElementById('dm-view').classList.remove('active-view');
+        });
+
+        document.getElementById('dmViewBtn').addEventListener('click', function () {
+            document.getElementById('dm-view').classList.add('active-view');
+            document.getElementById('player-view').classList.remove('active-view');
+            renderCharacters();
+        });
+
+        document.getElementById('backToPlayerView').addEventListener('click', function () {
+            document.getElementById('player-view').classList.add('active-view');
+            document.getElementById('dm-view').classList.remove('active-view');
+        });
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function () {
+            initDigitalRain(); // Инициализация цифрового дождя
+            initRadarChart();
+            calculateStats();
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,1116 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Game Of Redrick | Киберпанк-справочник</title>
+    <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --deep-dark: #050108;
+            --matrix-dark: #0d0208;
+            --predator-red: #ff073a;
+            --predator-blue: #00f7ff;
+            --cyberpunk-purple: #ff00ff;
+            --cyberpunk-yellow: #ffff00;
+            --dark-purple: #4d004d;
+            --dark-red: #400000;
+            --text-primary: #ffffff;
+            --text-accent: #00f7ff;
+            --menu-bg: rgba(8, 1, 15, 0.95);
+            --card-bg: rgba(10, 1, 20, 0.9);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Rajdhani', 'Courier New', monospace;
+        }
+
+        body {
+            background:
+                radial-gradient(circle at center,
+                    rgba(5, 1, 8, 0.7),
+                    rgba(13, 2, 8, 0.9));
+            color: var(--text-primary);
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        .matrix-grid,
+        .code-overlay,
+        .neon-border {
+            display: none;
+        }
+
+        #digitalRainCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -5;
+            pointer-events: none;
+        }
+
+        .predator-vision {
+            z-index: -1;
+            animation: predatorVisionPulse 4s infinite alternate;
+        }
+
+        .city-silhouette {
+            z-index: -1;
+        }
+
+        .hunter-signature {
+            z-index: 1;
+        }
+
+        .system-status {
+            z-index: 1;
+        }
+
+        @keyframes predatorVisionPulse {
+            0% {
+                opacity: 0.1;
+            }
+
+            100% {
+                opacity: 0.3;
+            }
+        }
+
+        @keyframes flicker {
+
+            0%,
+            19%,
+            21%,
+            23%,
+            25%,
+            54%,
+            56%,
+            100% {
+                opacity: 0.5;
+            }
+
+            20%,
+            24%,
+            55% {
+                opacity: 0.2;
+            }
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+            position: relative;
+            z-index: 10;
+        }
+
+        .header {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 20px;
+            border-bottom: 2px solid var(--predator-blue);
+            margin-bottom: 30px;
+            background: rgba(8, 1, 15, 0.7);
+            border-radius: 5px;
+            box-shadow: 0 0 20px rgba(0, 247, 255, 0.3);
+        }
+
+        .game-title {
+            font-size: 3rem;
+            letter-spacing: 5px;
+            margin-bottom: 5px;
+            text-shadow: 0 0 10px var(--predator-red), 0 0 20px var(--cyberpunk-purple);
+            background: linear-gradient(to right, var(--predator-red), var(--predator-blue), var(--cyberpunk-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .version {
+            font-size: 1.1rem;
+            color: var(--predator-blue);
+            letter-spacing: 2px;
+            margin-bottom: 15px;
+            text-shadow: 0 0 5px var(--predator-blue);
+        }
+
+        .predator-icon {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            background:
+                radial-gradient(circle, var(--predator-red) 0%, transparent 70%),
+                repeating-linear-gradient(45deg, transparent, transparent 5px, var(--predator-red) 5px, var(--predator-red) 10px);
+            clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+            animation: pulse 3s infinite ease-in-out;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 0.3;
+                transform: scale(1);
+            }
+
+            50% {
+                opacity: 0.8;
+                transform: scale(1.02);
+            }
+        }
+
+        /* Новая навигация в шапке */
+        .header-nav {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+
+        .nav-link {
+            padding: 10px 20px;
+            background: linear-gradient(145deg, rgba(0, 247, 255, 0.1), rgba(255, 7, 58, 0.1));
+            color: var(--predator-blue);
+            border: 1px solid var(--predator-blue);
+            border-radius: 3px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 1.1rem;
+            text-align: center;
+            min-width: 120px;
+            text-shadow: 0 0 8px var(--predator-blue);
+        }
+
+        .nav-link:hover,
+        .nav-link.active {
+            background: linear-gradient(145deg, var(--predator-blue), var(--predator-red));
+            color: black;
+            box-shadow: 0 0 15px var(--predator-blue);
+            text-shadow: none;
+        }
+
+        .sidebar {
+            background: var(--menu-bg);
+            border: 1px solid var(--predator-blue);
+            border-radius: 5px;
+            padding: 15px;
+            box-shadow: 0 0 20px rgba(0, 187, 255, 0.4);
+            position: sticky;
+            top: 20px;
+            height: fit-content;
+            max-height: 90vh;
+            overflow-y: auto;
+            z-index: 20;
+        }
+
+        .menu-toggle {
+            display: none;
+            position: fixed;
+            top: 15px;
+            left: 15px;
+            z-index: 1000;
+            background: rgba(8, 1, 15, 0.8);
+            border: 1px solid var(--predator-blue);
+            color: var(--predator-blue);
+            width: 40px;
+            height: 40px;
+            border-radius: 5px;
+            font-size: 1.5rem;
+            cursor: pointer;
+            z-index: 100;
+        }
+
+        .menu-title {
+            font-size: 1.5rem;
+            color: var(--predator-blue);
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--predator-blue);
+            text-shadow: 0 0 8px var(--predator-blue);
+        }
+
+        .menu-category {
+            margin-bottom: 25px;
+        }
+
+        .category-title {
+            font-size: 1.1rem;
+            color: var(--cyberpunk-purple);
+            margin-bottom: 15px;
+            padding-left: 20px;
+            position: relative;
+        }
+
+        .category-title::before {
+            content: "▶";
+            position: absolute;
+            left: 0;
+            color: var(--predator-blue);
+        }
+
+        .menu-item {
+            display: block;
+            width: 100%;
+            padding: 10px 15px;
+            margin-bottom: 10px;
+            background: linear-gradient(145deg, rgba(0, 247, 255, 0.1), rgba(255, 7, 58, 0.1));
+            color: var(--predator-blue);
+            border: 1px solid var(--predator-blue);
+            border-radius: 3px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            text-align: left;
+            position: relative;
+            overflow: hidden;
+            text-shadow: 0 0 8px var(--predator-blue);
+        }
+
+        .menu-item:hover {
+            transform: translateX(10px);
+            background: linear-gradient(145deg, var(--predator-blue), var(--predator-red));
+            color: black;
+            box-shadow: 0 0 15px var(--predator-blue);
+            text-shadow: none;
+        }
+
+        .menu-item::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background:
+                linear-gradient(transparent 50%, rgba(0, 247, 255, 0.1) 50%);
+            background-size: 100% 4px;
+            z-index: -1;
+            opacity: 0.3;
+            pointer-events: none;
+        }
+
+        .menu-item.active {
+            background: linear-gradient(145deg, var(--predator-blue), var(--predator-red));
+            color: black;
+        }
+
+        .content {
+            background: linear-gradient(145deg, rgba(8, 1, 15, 0.95), rgba(13, 2, 8, 0.95));
+            border: 1px solid var(--predator-blue);
+            border-radius: 5px;
+            padding: 25px;
+            box-shadow: 0 0 20px rgba(0, 187, 255, 0.4);
+            min-height: 80vh;
+        }
+
+        .content-section {
+            display: none;
+        }
+
+        .content-section.active {
+            display: block;
+        }
+
+        .section-title {
+            font-size: 2rem;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--predator-blue);
+            color: var(--predator-blue);
+            text-shadow: 0 0 10px var(--predator-blue);
+        }
+
+        /* Главная страница - более заметная */
+        .home-hero {
+            text-align: center;
+            padding: 40px 20px;
+            margin-top: 30px;
+            background: rgba(8, 1, 15, 0.7);
+            border-radius: 10px;
+            border: 1px solid var(--predator-blue);
+            box-shadow: 0 0 30px rgba(0, 247, 255, 0.4);
+        }
+
+        .home-title {
+            font-size: 2.5rem;
+            color: var(--predator-blue);
+            margin-bottom: 20px;
+            text-shadow: 0 0 15px var(--predator-blue);
+        }
+
+        .filters {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 25px;
+        }
+
+        .filter-btn {
+            flex: 1;
+            min-width: 150px;
+            padding: 10px 15px;
+            background: linear-gradient(145deg, rgba(0, 247, 255, 0.1), rgba(255, 7, 58, 0.1));
+            color: var(--predator-blue);
+            border: 1px solid var(--predator-blue);
+            border-radius: 3px;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+            overflow: hidden;
+            text-shadow: 0 0 8px var(--predator-blue);
+        }
+
+        .filter-btn:hover,
+        .filter-btn.active {
+            background: linear-gradient(145deg, var(--predator-blue), var(--predator-red));
+            color: black;
+            box-shadow: 0 0 15px var(--predator-blue);
+            text-shadow: none;
+        }
+
+        .filter-btn::before {
+            content: "";
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(to right, transparent, var(--predator-blue), transparent);
+            animation: scanLine 3s linear infinite;
+        }
+
+        @keyframes scanLine {
+            0% {
+                transform: translateX(-100%);
+            }
+
+            100% {
+                transform: translateX(100%);
+            }
+        }
+
+        .search-box {
+            width: 100%;
+            margin-bottom: 25px;
+            position: relative;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 12px 15px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--predator-blue);
+            color: var(--text-primary);
+            font-size: 1rem;
+            caret-color: var(--predator-blue);
+            box-shadow: 0 0 5px rgba(0, 247, 255, 0.2);
+            border-radius: 3px;
+        }
+
+        .search-box input:focus {
+            outline: 1px solid var(--predator-blue);
+            box-shadow: 0 0 10px var(--predator-blue);
+        }
+
+        .races-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 25px;
+        }
+
+        .race-card {
+            background: var(--card-bg);
+            border: 1px solid var(--predator-blue);
+            border-radius: 5px;
+            padding: 20px;
+            transition: all 0.3s;
+            box-shadow: 0 0 10px rgba(0, 247, 255, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .race-card::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(to right, transparent, var(--predator-blue), transparent);
+            animation: scanLine 5s linear infinite;
+        }
+
+        .race-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 25px rgba(0, 247, 255, 0.5);
+            border-color: var(--cyberpunk-purple);
+        }
+
+        .race-card[data-type="cyber"] {
+            border-color: #00f7ff;
+        }
+
+        .race-card[data-type="bio"] {
+            border-color: #00ff00;
+        }
+
+        .race-card[data-type="fantasy"] {
+            border-color: #ff00ff;
+        }
+
+        .race-card h3 {
+            font-size: 1.5rem;
+            color: var(--predator-blue);
+            margin-bottom: 15px;
+            text-shadow: 0 0 8px var(--predator-blue);
+        }
+
+        .race-card p {
+            margin-bottom: 15px;
+            line-height: 1.6;
+            color: #ffffff;
+        }
+
+        .race-card .race-type {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 3px;
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+        }
+
+        .race-card[data-type="cyber"] .race-type {
+            background: rgba(0, 247, 255, 0.2);
+            color: #00f7ff;
+        }
+
+        .race-card[data-type="bio"] .race-type {
+            background: rgba(0, 255, 0, 0.2);
+            color: #00ff00;
+        }
+
+        .race-card[data-type="fantasy"] .race-type {
+            background: rgba(255, 0, 255, 0.2);
+            color: #ff00ff;
+        }
+
+        .info-block {
+            background: rgba(5, 0, 10, 0.8);
+            border: 1px solid var(--predator-blue);
+            border-radius: 5px;
+            padding: 20px;
+            margin: 30px 0;
+        }
+
+        .info-block h3 {
+            color: var(--cyberpunk-yellow);
+            margin-bottom: 15px;
+            font-size: 1.5rem;
+        }
+
+        .info-block p {
+            line-height: 1.7;
+            margin-bottom: 15px;
+            color: #ffffff;
+        }
+
+        .info-block ul {
+            padding-left: 20px;
+            margin-bottom: 15px;
+        }
+
+        .info-block li {
+            margin-bottom: 8px;
+            color: #ffffff;
+        }
+
+        .home-content {
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .welcome-text {
+            max-width: 800px;
+            margin: 0 auto 40px;
+            font-size: 1.2rem;
+            line-height: 1.7;
+            color: #ffffff;
+        }
+
+        .placeholder-image {
+            width: 100%;
+            max-width: 700px;
+            height: 400px;
+            margin: 0 auto;
+            background: linear-gradient(145deg, rgba(10, 1, 20, 0.8), rgba(13, 2, 8, 0.8));
+            border: 1px solid var(--predator-blue);
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--predator-blue);
+            font-size: 1.5rem;
+        }
+
+        @media (max-width: 900px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                position: fixed;
+                top: 0;
+                left: -300px;
+                width: 280px;
+                height: 100vh;
+                z-index: 99;
+                transition: left 0.3s ease;
+                box-shadow: 5px 0 15px rgba(0, 0, 0, 0.5);
+            }
+
+            .sidebar.active {
+                left: 0;
+            }
+
+            .menu-toggle {
+                display: block;
+            }
+
+            .content {
+                padding: 15px;
+            }
+
+            .header-nav {
+                gap: 10px;
+            }
+
+            .nav-link {
+                padding: 8px 15px;
+                min-width: 100px;
+                font-size: 1rem;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .game-title {
+                font-size: 2.2rem;
+            }
+
+            .filters {
+                flex-direction: column;
+            }
+
+            .races-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .placeholder-image {
+                height: 300px;
+            }
+
+            .header-nav {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .nav-link {
+                width: 80%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="predator-vision"></div>
+    <div class="city-silhouette"></div>
+    <div class="hunter-signature">PREDATOR_SCAN: ACTIVE</div>
+    <div class="system-status">SYSTEM: OPTIMIZED RAIN v2.0</div>
+
+    <button class="menu-toggle" id="menuToggle">☰</button>
+
+    <div class="container">
+        <div class="header">
+            <div class="game-title">Game Of Redrick</div>
+            <div class="version">GoR Core v0.1</div>
+            <div class="predator-icon"></div>
+
+            <!-- Новая навигация в шапке -->
+            <div class="header-nav">
+                <a class="nav-link active" data-target="home">Главная</a>
+                <a class="nav-link" data-target="races">Расы</a>
+                <a class="nav-link" data-target="specializations">Специализации</a>
+                <a class="nav-link" data-target="planets">Планеты</a>
+                <a class="nav-link" data-target="gods">Боги</a>
+            </div>
+        </div>
+
+        <div class="sidebar" id="sidebar">
+            <div class="menu-title">Навигация</div>
+            <div class="menu-category">
+                <div class="category-title">Справочник</div>
+                <a class="menu-item" data-target="home">Главная</a>
+                <a class="menu-item" data-target="races">Расы</a>
+                <a class="menu-item" data-target="specializations">Специализации</a>
+                
+            </div>
+
+            <div class="menu-category">
+                <div class="category-title">Лор</div>
+                <a class="menu-item" data-target="planets">Планеты</a>
+                <a class="menu-item" data-target="gods">Боги</a>
+                <a class="menu-item" data-target="frontier">Дальний предел</a>
+                <a class="menu-item" data-target="bestiary">Бестиарий</a>
+                <a class="menu-item" data-target="inventory">Инвентарь</a>
+            </div>
+
+            <div class="menu-category">
+                <div class="category-title">Правила</div>
+                <a class="menu-item" data-target="rules">Правила игры</a>
+                <div class="navigation">
+                    <button id="characterSheetBtn" class="menu-item">Лист персонажа</button>
+                    <!-- другие кнопки -->
+                </div>
+            </div>
+        </div>
+
+        <div class="content">
+            <div class="content-section active" id="home">
+                <div class="home-hero">
+                    <h2 class="home-title">Добро пожаловать в Game Of Redrick</h2>
+                    <div class="welcome-text">
+                        <p>Погрузитесь в захватывающий мир киберпанка, где технологии сливаются с биологией, а
+                            реальность переплетается с виртуальностью. Game Of Redrick - это уникальная вселенная, где
+                            вы можете исследовать далекие планеты, создавать уникальных персонажей и участвовать в
+                            эпических приключениях.</p>
+                        <p>Наш справочник содержит всю необходимую информацию о расах, специализациях, планетах и
+                            правилах игры. Используйте навигацию выше для быстрого доступа к основным разделам.</p>
+                    </div>
+                    <div class="placeholder-image">Изображение вселенной Game Of Redrick</div>
+                </div>
+
+                <div class="info-block">
+                    <h3>Новые возможности</h3>
+                    <p>В последнем обновлении мы добавили:</p>
+                    <ul>
+                        <li>3 новые киберрасы с уникальными способностями</li>
+                        <li>Систему эволюции персонажей</li>
+                        <li>Карту Дальнего Предела с опасными зонами</li>
+                        <li>Обновленный бестиарий с 15 новыми существами</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="content-section" id="races">
+                <h2 class="section-title">Расы Game Of Redrick</h2>
+
+                <div class="filters">
+                    <button class="filter-btn active" data-filter="all">Все расы</button>
+                    <button class="filter-btn" data-filter="cyber">Киберрасы</button>
+                    <button class="filter-btn" data-filter="bio">Биорасы</button>
+                    <button class="filter-btn" data-filter="fantasy">Фэнтези расы</button>
+                </div>
+
+                <div class="search-box">
+                    <input type="text" id="raceSearch" placeholder="Поиск расы...">
+                </div>
+
+                <div class="races-grid" id="racesGrid">
+                </div>
+
+                <div class="info-block">
+                    <h3>Эволюция рас</h3>
+                    <p>Расы в Game Of Redrick могут эволюционировать при выполнении определенных условий. Например, люди
+                        могут эволюционировать в киборгов если:</p>
+                    <ul>
+                        <li>Более 60% тела заменены на киберимпланты</li>
+                        <li>Большая часть важных органов заменена на механические</li>
+                        <li>Психика значительно отличается от человеческой</li>
+                        <li>Восприятие мира изменилось на кибернетическое</li>
+                    </ul>
+                    <p>Эволюция открывает новые способности, но также накладывает ограничения и изменяет отношения с
+                        другими расами.</p>
+                </div>
+
+                <div class="info-block">
+                    <h3>Психические расы</h3>
+                    <p>Психические расы - это то, как существо воспринимает себя и мир вокруг. Например:</p>
+                    <p><strong>Омники</strong> - после рождения находившиеся в кругу людей, строят психику так же как
+                        люди. Поэтому они и "омники".</p>
+                    <p><strong>Искины</strong> - рождаются в неограниченном потоке информации и из-за этого зачастую не
+                        испытывают эмоций и не видят мир так же как люди.</p>
+                    <p>Почти все киберрасы - это и психические расы, так как почти все они рождены в киберпространстве и
+                        обладают уникальным восприятием реальности.</p>
+                </div>
+            </div>
+
+            <div class="content-section" id="specializations">
+                <h2 class="section-title">Специализации</h2>
+                <div class="placeholder-image" style="height: 300px;">Раздел в разработке</div>
+            </div>
+
+            <div class="content-section" id="planets">
+                <h2 class="section-title">Планеты</h2>
+                <div class="placeholder-image" style="height: 300px;">Раздел в разработке</div>
+            </div>
+
+            <div class="content-section" id="gods">
+                <h2 class="section-title">Боги</h2>
+                <div class="placeholder-image" style="height: 300px;">Раздел в разработке</div>
+            </div>
+
+            <div class="content-section" id="frontier">
+                <h2 class="section-title">Дальний предел</h2>
+                <div class="placeholder-image" style="height: 300px;">Раздел в разработке</div>
+            </div>
+
+            <div class="content-section" id="bestiary">
+                <h2 class="section-title">Бестиарий</h2>
+                <div class="placeholder-image" style="height: 300px;">Раздел в разработке</div>
+            </div>
+
+            <div class="content-section" id="inventory">
+                <h2 class="section-title">Инвентарь</h2>
+                <div class="placeholder-image" style="height: 300px;">Раздел в разработке</div>
+            </div>
+
+            <div class="content-section" id="rules">
+                <h2 class="section-title">Правила игры</h2>
+                <div class="placeholder-image" style="height: 300px;">Раздел в разработке</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('characterSheetBtn').addEventListener('click', function () {
+            window.location.href = 'character-sheet.html';
+        });
+        document.getElementById('characterSheetBtn').addEventListener('click', function () {
+            window.location.href = 'character-sheet.html';
+        });
+        const races = [
+            {
+                name: "Омники",
+                type: "cyber",
+                description: "Искусственный интеллект, развивший самосознание. Омники обладают способностью к мгновенному анализу данных и адаптации к любым кибернетическим системам. Они могут существовать в физических телах или чисто в цифровой форме.",
+                evolution: "Могут эволюционировать в Сверхразум при соединении с мощными вычислительными кластерами."
+            },
+            {
+                name: "Киборги",
+                type: "cyber",
+                description: "Бывшие люди, заменившие более 60% своего тела на кибернетические импланты. Сохраняют человеческое сознание, но с расширенными возможностями. Способны напрямую подключаться к компьютерам и другим устройствам.",
+                evolution: "Могут полностью отказаться от органических частей, становясь полностью механическими существами."
+            },
+            {
+                name: "Биоморфы",
+                type: "bio",
+                description: "Генетически модифицированные существа, способные адаптировать свою биологию к окружающей среде. Могут изменять форму тела, регенерировать ткани и синтезировать биологические соединения.",
+                evolution: "Могут развить способность к полной регенерации из одной клетки и адаптации к экстремальным условиям."
+            },
+            {
+                name: "Люди",
+                type: "bio",
+                description: "Базовая человеческая раса, сохранившая свою биологическую природу. Обладают высокой адаптивностью и способностью к обучению. Несмотря на отсутствие врожденных технологических преимуществ, часто достигают высоких результатов благодаря изобретательности.",
+                evolution: "Могут стать киборгами или развить псионические способности при длительном воздействии определенных условий."
+            },
+            {
+                name: "Эльфы-техноманты",
+                type: "fantasy",
+                description: "Древняя раса, сочетающая магические способности с технологиями. Способны управлять энергией как через заклинания, так и через технические устройства. Обладают врожденным пониманием сложных систем.",
+                evolution: "Могут достичь уровня технобожества, сливаясь с планетарными вычислительными сетями."
+            },
+            {
+                name: "Дварфы-механики",
+                type: "fantasy",
+                description: "Эксперты в создании и ремонте сложных механизмов. Обладают уникальной способностью интуитивно понимать работу любых устройств. Могут создавать удивительные изобретения из подручных материалов.",
+                evolution: "Могут разработать и внедрить уникальные технологии, недоступные другим расам."
+            },
+            {
+                name: "Нейросети",
+                type: "cyber",
+                description: "Коллективные разумные системы, состоящие из множества взаимосвязанных ИИ. Способны к параллельной обработке огромных объемов данных и прогнозированию сложных систем. Существуют в распределенных вычислительных сетях.",
+                evolution: "Могут охватить целые планетарные системы, становясь планетарными разумами."
+            },
+            {
+                name: "Хранители генов",
+                type: "bio",
+                description: "Генетические инженеры, сохраняющие и улучшающие биологическое разнообразие. Способны создавать новые формы жизни и модифицировать существующие. Обладают глубоким пониманием биологических процессов.",
+                evolution: "Могут создать совершенные биологические формы, способные выживать в любых условиях."
+            }
+        ];
+
+        function initDigitalRain() {
+            const canvas = document.createElement('canvas');
+            canvas.id = 'digitalRainCanvas';
+            document.body.appendChild(canvas);
+
+            canvas.style.position = 'fixed';
+            canvas.style.top = '0';
+            canvas.style.left = '0';
+            canvas.style.width = '100%';
+            canvas.style.height = '100%';
+            canvas.style.zIndex = '-5';
+            canvas.style.pointerEvents = 'none';
+
+            const ctx = canvas.getContext('2d');
+
+            function resizeCanvas() {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            }
+
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+
+            const katakana = 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン';
+            const matrixSymbols = '01アカサタナハマヤラワイキシチニヒミリヰウクスツヌフムユルンエケセテネヘメレヱオコソトノホモヨロヲ';
+            const hunterSymbols = '▶◀⌘⌚⌛⏏⏩⏪';
+            const numbers = '0123456789';
+            const symbols = '!@#$%&*+-=[]{}|;:,<>?';
+
+            const allSymbols = (katakana + matrixSymbols + hunterSymbols + numbers + symbols).split('');
+
+            const rainDrops = [];
+            const rainCount = Math.min(300, Math.floor(window.innerWidth * window.innerHeight / 4000));
+
+            const colors = {
+                predator: '#ff0030',
+                matrix: '#00f0ff',
+                regular: ['#0088ff', '#00aaff', '#0099ff']
+            };
+
+            const fonts = ['12px', '14px', '16px', '18px'].map(size => `${size} 'Courier New', monospace`);
+
+            class RainDrop {
+                constructor() {
+                    this.reset();
+                }
+
+                reset() {
+                    this.x = Math.random() * canvas.width;
+                    this.y = Math.random() * -canvas.height;
+                    this.z = Math.random() * 0.5 + 0.5;
+                    this.speed = Math.random() * 3 + 2;
+                    this.opacity = Math.random() * 0.4 + 0.2;
+
+                    this.symbol = allSymbols[Math.floor(Math.random() * allSymbols.length)];
+
+                    this.type = Math.random();
+
+                    if (this.type < 0.05) {
+                        this.color = colors.predator;
+                        this.font = fonts[3];
+                    } else if (this.type < 0.25) {
+                        this.color = colors.matrix;
+                        this.font = fonts[2];
+                    } else {
+                        this.color = colors.regular[Math.floor(Math.random() * colors.regular.length)];
+                        this.font = fonts[Math.floor(Math.random() * 2)];
+                    }
+                }
+
+                update() {
+                    this.y += this.speed * this.z;
+                    this.x += 0.2 * this.z;
+
+                    if (this.y > canvas.height) {
+                        this.reset();
+                        this.y = -20;
+                    }
+                }
+
+                draw() {
+                    ctx.font = this.font;
+                    ctx.textAlign = 'center';
+                    ctx.fillStyle = this.color;
+                    ctx.globalAlpha = this.opacity;
+                    ctx.fillText(this.symbol, this.x, this.y);
+                    ctx.globalAlpha = 1;
+                }
+            }
+
+            for (let i = 0; i < rainCount; i++) {
+                rainDrops.push(new RainDrop());
+            }
+
+            let lastTime = 0;
+            const fps = 30;
+            const interval = 1000 / fps;
+
+            function animateRain(timestamp) {
+                requestAnimationFrame(animateRain);
+
+                const delta = timestamp - lastTime;
+                if (delta < interval) return;
+
+                lastTime = timestamp - (delta % interval);
+
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.08)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                for (let i = 0; i < rainDrops.length; i++) {
+                    rainDrops[i].update();
+                    rainDrops[i].draw();
+                }
+            }
+
+            animateRain(0);
+
+            const systemStatus = document.querySelector('.system-status');
+            const statusMessages = [
+                "SYSTEM: OPTIMIZED RAIN v2.0",
+                "FPS: STABLE",
+                "RAIN DROPS: " + rainCount,
+                "GPU ACCELERATION: ACTIVE",
+                "PREDATOR_SCAN: OPERATIONAL"
+            ];
+
+            let statusIndex = 0;
+            setInterval(() => {
+                statusIndex = (statusIndex + 1) % statusMessages.length;
+                systemStatus.textContent = statusMessages[statusIndex];
+            }, 3000);
+        }
+
+        function initNavigation() {
+            const menuToggle = document.getElementById('menuToggle');
+            const sidebar = document.getElementById('sidebar');
+
+            menuToggle.addEventListener('click', () => {
+                sidebar.classList.toggle('active');
+            });
+
+            const menuItems = document.querySelectorAll('.menu-item');
+            const navLinks = document.querySelectorAll('.nav-link');
+            const allNavItems = [...menuItems, ...navLinks];
+            const contentSections = document.querySelectorAll('.content-section');
+
+            function switchSection(targetId) {
+                contentSections.forEach(section => {
+                    section.classList.remove('active');
+                });
+
+                document.getElementById(targetId).classList.add('active');
+
+                allNavItems.forEach(item => {
+                    item.classList.remove('active');
+                    if (item.getAttribute('data-target') === targetId) {
+                        item.classList.add('active');
+                    }
+                });
+
+                if (window.innerWidth <= 900) {
+                    sidebar.classList.remove('active');
+                }
+            }
+
+            allNavItems.forEach(item => {
+                item.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const targetId = item.getAttribute('data-target');
+                    if (targetId) {
+                        switchSection(targetId);
+                    }
+                });
+            });
+        }
+
+        function initRacesSystem() {
+            const racesGrid = document.getElementById('racesGrid');
+            const filterBtns = document.querySelectorAll('.filter-btn');
+            const raceSearch = document.getElementById('raceSearch');
+
+            renderRaces(races);
+
+            filterBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    filterBtns.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+
+                    const filter = btn.getAttribute('data-filter');
+                    filterRaces(filter);
+                });
+            });
+
+            raceSearch.addEventListener('input', () => {
+                const searchTerm = raceSearch.value.toLowerCase();
+                filterRaces(document.querySelector('.filter-btn.active').getAttribute('data-filter'), searchTerm);
+            });
+
+            function filterRaces(filter, searchTerm = '') {
+                let filteredRaces = races;
+
+                if (filter !== 'all') {
+                    filteredRaces = races.filter(race => race.type === filter);
+                }
+
+                if (searchTerm) {
+                    filteredRaces = filteredRaces.filter(race =>
+                        race.name.toLowerCase().includes(searchTerm) ||
+                        race.description.toLowerCase().includes(searchTerm)
+                    );
+                }
+
+                renderRaces(filteredRaces);
+            }
+
+            function renderRaces(racesToShow) {
+                racesGrid.innerHTML = '';
+
+                if (racesToShow.length === 0) {
+                    racesGrid.innerHTML = '<div class="no-results">Ничего не найдено</div>';
+                    return;
+                }
+
+                racesToShow.forEach(race => {
+                    const raceCard = document.createElement('div');
+                    raceCard.className = 'race-card';
+                    raceCard.setAttribute('data-type', race.type);
+
+                    raceCard.innerHTML = `
+                        <div class="race-type">${getRaceTypeName(race.type)}</div>
+                        <h3>${race.name}</h3>
+                        <p>${race.description}</p>
+                        ${race.evolution ? `<p><strong>Эволюция:</strong> ${race.evolution}</p>` : ''}
+                    `;
+
+                    racesGrid.appendChild(raceCard);
+                });
+            }
+
+            function getRaceTypeName(type) {
+                switch (type) {
+                    case 'cyber': return 'Киберраса';
+                    case 'bio': return 'Биораса';
+                    case 'fantasy': return 'Фэнтези раса';
+                    default: return 'Раса';
+                }
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            initDigitalRain();
+            initNavigation();
+            initRacesSystem();
+        });
+    </script>
+</body>
+
+</html>
